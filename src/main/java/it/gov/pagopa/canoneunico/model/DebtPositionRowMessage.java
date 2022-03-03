@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class DebtPositionRowMessage {
 
     // CSV
+    private String id;
     private String debtorName;
     private String debtorEmail;
     private Long amount;
