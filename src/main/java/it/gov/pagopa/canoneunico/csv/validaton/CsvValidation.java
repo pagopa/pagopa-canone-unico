@@ -1,6 +1,8 @@
 package it.gov.pagopa.canoneunico.csv.validaton;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.exceptions.CsvException;
@@ -18,6 +20,7 @@ public class CsvValidation {
     	debtPosValidationErr.setCsvFilename(fileName);
     	debtPosValidationErr.setTotalNumberRows(payments.size());
         checkRequired(debtPosValidationErr, csvToBean);
+        checkUniqueId(debtPosValidationErr, payments);
         return debtPosValidationErr;
     }
     
@@ -35,12 +38,32 @@ public class CsvValidation {
     				errorRow = new DebtPositionErrorRow();
     				errorRow.setRowNumber(ex.getLineNumber());
     				errorRow.getErrorsDetail().add(ex.getMessage());
-    			}
-    			
-    			debtPosValidationErr.getErrorRows().add(errorRow);
+    				debtPosValidationErr.getErrorRows().add(errorRow);
+    			}	
     		}
     	}
 
+    }
+    
+    private static void checkUniqueId(DebtPositionValidationCsvError debtPosValidationErr, List<PaymentNotice> payments) {
+    	final Set<String> unique = new HashSet<>(); 
+    	for (int i = 0; i < payments.size(); i++) {
+    		String id = payments.get(i).getId();
+    		if (!unique.add(id)) {
+    			Integer innerI = i;
+    			DebtPositionErrorRow errorRow = debtPosValidationErr.getErrorRows().stream().filter(e -> e.getRowNumber() == (innerI+1)).findFirst().orElse(null);
+    			if(null != errorRow) {
+    				// already exist an error for the row number, add the new one
+    				errorRow.getErrorsDetail().add("Duplicated ID ["+id+"] found");
+    			}
+    			else {
+    				errorRow = new DebtPositionErrorRow();
+    				errorRow.setRowNumber((innerI+1));
+    				errorRow.getErrorsDetail().add("Duplicated ID ["+id+"] found");
+    				debtPosValidationErr.getErrorRows().add(errorRow);
+    			}
+    		}
+    	}
     }
     
     
