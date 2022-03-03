@@ -1,22 +1,18 @@
 package it.gov.pagopa.canoneunico.entity;
 
 import com.microsoft.azure.storage.table.TableServiceEntity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-@Builder(toBuilder = true)
 @NoArgsConstructor
-@AllArgsConstructor
 public class DebtPositionEntity extends TableServiceEntity {
 
-    private Status status;
+    private String status;
 
-    // CSV
+    //    // CSV
     private String paIdIstat;
     private String paIdCatasto;
     private String paIdFiscalCode;
@@ -45,6 +41,8 @@ public class DebtPositionEntity extends TableServiceEntity {
     public DebtPositionEntity(String filename, String id) {
         this.partitionKey = filename;
         this.rowKey = id;
+        // https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.cosmos.table.tableentity.etag?view=azure-dotnet#microsoft-azure-cosmos-table-tableentity-etag
+        this.etag = "*";
     }
 
 }
