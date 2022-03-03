@@ -1,8 +1,11 @@
 package it.gov.pagopa.canoneunico.functions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.QueueTrigger;
+import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,12 +23,14 @@ public class CuCreateDebtPosition {
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
+        logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START] new message " + message);
+
 
         try {
+            var debtPosition = new ObjectMapper().readValue(message, DebtPositionMessage.class);
+
 
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START]  processed a message " + message);
-
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END]  processed a message " + message);
         } catch (Exception e) {
 
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction Error] Generic Error " + e.getMessage() + " "
