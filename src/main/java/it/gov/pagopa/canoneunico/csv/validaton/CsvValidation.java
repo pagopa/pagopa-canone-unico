@@ -1,8 +1,6 @@
 package it.gov.pagopa.canoneunico.csv.validaton;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.exceptions.CsvException;
@@ -15,17 +13,18 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class CsvValidation {
 
-    public static DebtPositionValidationCsvError checkCsvIsValid(String fileName, CsvToBean<?> csvToBean, List<PaymentNotice> payments){
+    public static DebtPositionValidationCsvError checkCsvIsValid(String fileName, CsvToBean<PaymentNotice> csvToBean){
     	DebtPositionValidationCsvError debtPosValidationErr = new DebtPositionValidationCsvError();
     	debtPosValidationErr.setCsvFilename(fileName);
-    	debtPosValidationErr.setTotalNumberRows(payments.size());
-        checkRequired(debtPosValidationErr, csvToBean);
-        checkUniqueId(debtPosValidationErr, payments);
+    	CsvValidation.checkConstraintErrors(debtPosValidationErr, csvToBean);
         return debtPosValidationErr;
     }
     
-    private static void checkRequired(DebtPositionValidationCsvError debtPosValidationErr, CsvToBean<?> csvToBean) {
+    private static void checkConstraintErrors (DebtPositionValidationCsvError debtPosValidationErr, CsvToBean<PaymentNotice> csvToBean) {
+    	final List<PaymentNotice> payments = csvToBean.parse();
     	List<CsvException> parsingExceptions = csvToBean.getCapturedExceptions();
+    	debtPosValidationErr.setTotalNumberRows(payments.size()+parsingExceptions.size());
+    	debtPosValidationErr.setNumberInvalidRows(parsingExceptions.size());
     	if (!parsingExceptions.isEmpty()) {
     		for (CsvException ex: parsingExceptions) {
 
@@ -43,28 +42,6 @@ public class CsvValidation {
     		}
     	}
 
-    }
-    
-    private static void checkUniqueId(DebtPositionValidationCsvError debtPosValidationErr, List<PaymentNotice> payments) {
-    	final Set<String> unique = new HashSet<>(); 
-    	for (int i = 0; i < payments.size(); i++) {
-    		String id = payments.get(i).getId();
-    		if (!unique.add(id)) {
-    			Integer innerI = i;
-    			DebtPositionErrorRow errorRow = debtPosValidationErr.getErrorRows().stream().filter(e -> e.getRowNumber() == (innerI+1)).findFirst().orElse(null);
-    			if(null != errorRow) {
-    				// already exist an error for the row number, add the new one
-    				errorRow.getErrorsDetail().add("Duplicated ID ["+id+"] found");
-    			}
-    			else {
-    				errorRow = new DebtPositionErrorRow();
-    				errorRow.setRowNumber((innerI+1));
-    				errorRow.getErrorsDetail().add("Duplicated ID ["+id+"] found");
-    				debtPosValidationErr.getErrorRows().add(errorRow);
-    			}
-    		}
-    	}
-    }
-    
+    } 
     
 }
