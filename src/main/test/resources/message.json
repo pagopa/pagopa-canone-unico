@@ -1,0 +1,27 @@
+{
+  "csvFilename": "csv",
+  "rows": [
+    {
+      "id": "1",
+      "debtorName": "fake_data",
+      "debtorEmail": "fake_data",
+      "amount": 60,
+      "iuv": "fake_data",
+      "iupd": "fake_data",
+      "fiscalCode": "A",
+      "companyName": "fake_data",
+      "iban": "fake_data"
+    },
+    {
+      "id": "2",
+      "debtorName": "fake_data",
+      "debtorEmail": "fake_data",
+      "amount": 60,
+      "iuv": "fake_data",
+      "iupd": "fake_data",
+      "fiscalCode": "B",
+      "companyName": "fake_data",
+      "iban": "fake_data"
+    }
+  ]
+}
