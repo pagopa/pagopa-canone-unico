@@ -11,16 +11,18 @@ import com.microsoft.azure.storage.queue.CloudQueue;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.CloudTableClient;
 import com.microsoft.azure.storage.table.TableRequestOptions;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 
+@AllArgsConstructor
 @NoArgsConstructor
 public class AzuriteStorageUtil {
 
-    private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
-    private final String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
+    private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+    private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
 
 
     // Create a new table

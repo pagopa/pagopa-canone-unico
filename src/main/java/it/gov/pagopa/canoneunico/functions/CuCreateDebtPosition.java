@@ -36,6 +36,8 @@ public class CuCreateDebtPosition {
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
+
+            // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
             debtPositions.getRows()
                     .parallelStream()
                     .forEach(row -> createDebtPosition(debtPositions.getCsvFilename(), logger, row));
@@ -48,7 +50,16 @@ public class CuCreateDebtPosition {
 
     }
 
+    /**
+     * calls GPD for the status and updates the elem status in the table
+     *
+     * @param filename used as partition key
+     * @param logger   for logging
+     * @param row      element to process
+     */
     private void createDebtPosition(String filename, Logger logger, DebtPositionRowMessage row) {
+        // get status from GPD
+
         GpdClient gpdClient = this.getGpdClientInstance();
 
         logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction] Calling GPD service: " + row.getFiscalCode());
@@ -76,6 +87,7 @@ public class CuCreateDebtPosition {
                         .build()))
                 .build());
 
+        // update entity
         logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction] Updating table: " + row.getFiscalCode());
         var tabelService = getDebtPositionService(logger);
         tabelService.updateEntity(filename, row, status);
