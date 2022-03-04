@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.BlobTrigger;
@@ -28,6 +31,7 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
+import it.gov.pagopa.canoneunico.csv.model.service.CuCsvService;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
@@ -47,7 +51,9 @@ public class CuCsvParsing {
 	private static final String LOG_VALIDATION_ERROR_HEADER = "Error during csv validation {filename = %s; nLinesError/nTotLines = %s}";
 	private static final String LOG_VALIDATION_ERROR_DETAIL = "{line = %s } - {errors = %s}";
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private Logger logger;
+    private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
+    private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
+    
 
     /**
      * This function will be invoked when a new or updated blob is detected at the
@@ -59,9 +65,11 @@ public class CuCsvParsing {
     		@BlobTrigger(name = "BlobCsvTrigger", path = "%INPUT_CSV_BLOB%/{name}", dataType = "binary", connection = "CU_SA_CONNECTION_STRING") byte[] content,
     		@BindingName("name") String fileName, final ExecutionContext context) {
 
-    	logger = context.getLogger();
+    	Logger logger = context.getLogger();
 
     	logger.log(Level.INFO, () -> "Blob Trigger function executed at: " + LocalDateTime.now() + " for blob " + fileName);
+    	
+    	CuCsvService csvService = this.getCuCsvServiceInstance(logger);
 
     	// CSV File
     	String converted = new String(content, StandardCharsets.UTF_8);
@@ -101,9 +109,11 @@ public class CuCsvParsing {
         		});
     			logger.log(Level.SEVERE, () -> header + System.lineSeparator() + details);
     			
-    			StringWriter errorCSV = generateErrorCsvFile(converted, csvValidationErrors);
-    			logger.info("********* Print CSV: " + errorCSV);
-    			//TODO: Spostare il file nella cartella error del blob storage
+    			StringWriter errorCSV = this.generateErrorCsvFile(converted, csvValidationErrors);
+    			// Spostare il file nella cartella error del blob storage
+    			csvService.create(containerErrorBlob, fileName, errorCSV.toString());
+    			// Rimuovere il file originale dalla cartella di input
+    			csvService.delete(containerInputBlob, fileName);
     		}
     		
     		
@@ -120,6 +130,10 @@ public class CuCsvParsing {
     	}
     	
     	
+    }
+    
+    public CuCsvService getCuCsvServiceInstance(Logger logger) {
+        return new CuCsvService(this.storageConnectionString, logger);
     }
     
     private StringWriter generateErrorCsvFile (String converted, DebtPositionValidationCsvError csvValidationErrors) throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
