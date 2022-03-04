@@ -23,8 +23,8 @@ public class AzuriteStorageUtil {
 
     private String storageConnectionString;
     private String flowsTable;
-    private String flowsQueue;
-    private String containerBlob;
+    private String containerBlobIn;
+    private String containerBlobOut;
 
     // Create a new table
     public void createTable() throws URISyntaxException, InvalidKeyException, StorageException {
@@ -40,23 +40,25 @@ public class AzuriteStorageUtil {
         }
     }
 
-    // Create a new queue
-    public void createQueue() throws URISyntaxException, InvalidKeyException, StorageException {
-        if (debugAzurite) {
-            CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).createCloudQueueClient()
-                    .getQueueReference(flowsQueue);
-            queue.createIfNotExists();
-        }
-    }
-
     // Create a new blob
-    public void createBlob() {
+    public void createBlobIn() {
         if (debugAzurite) {
             BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                     .connectionString(this.storageConnectionString).buildClient();
-            BlobContainerClient container = blobServiceClient.getBlobContainerClient(containerBlob);
+            BlobContainerClient container = blobServiceClient.getBlobContainerClient(containerBlobIn);
             if (!container.exists()) {
-                blobServiceClient.createBlobContainer(containerBlob);
+                blobServiceClient.createBlobContainer(containerBlobIn);
+            }
+        }
+    }
+
+    public void createBlobOut() {
+        if (debugAzurite) {
+            BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+                    .connectionString(this.storageConnectionString).buildClient();
+            BlobContainerClient container = blobServiceClient.getBlobContainerClient(containerBlobOut);
+            if (!container.exists()) {
+                blobServiceClient.createBlobContainer(containerBlobOut);
             }
         }
     }

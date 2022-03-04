@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class DebtPositionEntity extends TableServiceEntity {
 
-    private Status status;
+    private String status;
 
     // CSV
     private String paIdIstat;
@@ -30,7 +30,7 @@ public class DebtPositionEntity extends TableServiceEntity {
 
     private String debtorName;
     private String debtorEmail;
-    private Long amount;
+    private String amount;
 
     // generated
     private String iuv;
