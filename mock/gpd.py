@@ -145,7 +145,12 @@ class DebtpositionsHandler(tornado.web.RequestHandler):
     def post(self, idpa):
         print("request received")
         print(f"{self.request}{self.request.body.decode()} - {idpa}")
-        self.set_status(201)
+        if idpa == "A":
+            print('A')
+            self.set_status(201)
+        else:
+            print('B')
+            self.set_status(404)
         self.write(json.dumps({"iupd": "string"}))
 
 
