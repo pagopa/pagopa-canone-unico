@@ -5,6 +5,7 @@ import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.TableBatchOperation;
 import com.microsoft.azure.storage.table.TableOperation;
+import com.microsoft.azure.storage.table.TableQuery;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
@@ -18,8 +19,10 @@ import java.util.logging.Logger;
 
 public class DebtPositionTableService {
 
-    private final String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private final String tableName = System.getenv("DEBT_POSITIONS_TABLE");
+    private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
+    private String tableName = System.getenv("DEBT_POSITIONS_TABLE");
+    private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+
     private final Logger logger;
 
     public DebtPositionTableService(Logger logger) {
@@ -27,14 +30,30 @@ public class DebtPositionTableService {
         createEnv();
     }
 
+    public DebtPositionTableService(String storageConnectionString, String tableName, boolean debugAzurite, Logger logger) {
+        this.storageConnectionString = storageConnectionString;
+        this.tableName = tableName;
+        this.debugAzurite = debugAzurite;
+        this.logger = logger;
+        createEnv();
+    }
+
+
+    /**
+     * @param filename     used as partition key
+     * @param debtPosition elem of the message
+     * @param status       to update
+     */
     public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status) {
 
         this.logger.log(Level.INFO, "[DebtPositionTableService] START storing ");
 
         try {
+            // get the table
             CloudTable table = CloudStorageAccount.parse(storageConnectionString).createCloudTableClient()
                     .getTableReference(this.tableName);
 
+            // update the entity
             DebtPositionEntity entity = new DebtPositionEntity(filename, debtPosition.getId());
             entity.setStatus(status ? Status.CREATED.name() : Status.ERROR.name());
 
@@ -46,6 +65,29 @@ public class DebtPositionTableService {
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
             this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService] Error " + e);
         }
+    }
+
+    public DebtPositionEntity getEntity(String filename, String id) {
+
+        this.logger.log(Level.INFO, "[DebtPositionTableService] START get entity ");
+
+        try {
+            // get the table
+            CloudTable table = CloudStorageAccount.parse(storageConnectionString).createCloudTableClient()
+                    .getTableReference(this.tableName);
+
+            TableQuery<DebtPositionEntity> query = TableQuery.from(DebtPositionEntity.class)
+                    .where(TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, filename))
+                    .where(TableQuery.generateFilterCondition("RowKey", TableQuery.QueryComparisons.EQUAL, id));
+
+            Iterable<DebtPositionEntity> result = table.execute(query);
+
+            return result.iterator().next();
+
+        } catch (URISyntaxException | StorageException | InvalidKeyException e) {
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService] Error " + e);
+        }
+        return null;
     }
 
 
@@ -70,7 +112,7 @@ public class DebtPositionTableService {
     }
 
     private void createEnv() {
-        AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+        AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil(debugAzurite, storageConnectionString);
         try {
             azuriteStorageUtil.createTable(tableName);
         } catch (Exception e) {
