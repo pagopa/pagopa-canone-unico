@@ -1,5 +1,6 @@
 package it.gov.pagopa.canoneunico.service;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.canoneunico.model.PaymentPositionModel;
 import lombok.AccessLevel;
@@ -28,6 +29,7 @@ public class GpdClient {
     public boolean createDebtPosition(String idPa, PaymentPositionModel body) {
         try {
             Response response = ClientBuilder.newClient()
+                    .register(JacksonJaxbJsonProvider.class)
                     .target(gpdHost + String.format(POST_DEBT_POSITIONS, idPa))
                     .request()
                     .accept(MediaType.APPLICATION_JSON)
