@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class DebtPositionEntity extends TableServiceEntity {
 
-    private String status;
+    // {@link Status}
+    private String status; // Status: INSERTED | CREATED | ERROR
 
-    //    // CSV
+    // CSV
     private String paIdIstat;
     private String paIdCatasto;
     private String paIdFiscalCode;
@@ -26,7 +27,7 @@ public class DebtPositionEntity extends TableServiceEntity {
 
     private String debtorName;
     private String debtorEmail;
-    private Long amount;
+    private String amount; // Long
 
     // generated
     private String iuv;
