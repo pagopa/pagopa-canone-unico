@@ -8,7 +8,6 @@ runOnDraft: true
 
   # A list of assignees, overrides reviewers if set
   assignees:
-    - pagopa/pagopa-tech
     - jacopocarlini
     - aomegax
     - pasqualespica
