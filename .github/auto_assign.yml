@@ -6,8 +6,8 @@ addAssignees: author
 
 runOnDraft: true
 
-  # A list of assignees, overrides reviewers if set
-  assignees:
-    - jacopocarlini
-    - aomegax
-    - pasqualespica
+# A list of assignees, overrides reviewers if set
+assignees:
+  - jacopocarlini
+  - aomegax
+  - pasqualespica
