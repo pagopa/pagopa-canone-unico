@@ -9,45 +9,30 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.logging.Logger;
 
-import org.junit.ClassRule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.utility.DockerImageName;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
+import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.service.CuCsvService;
+import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 
 @ExtendWith(MockitoExtension.class)
 class CuCsvParsingTest {
-	
-	/*
-	@ClassRule
-    @Container
-    public static GenericContainer<?> azurite = new GenericContainer<>(
-            DockerImageName.parse("mcr.microsoft.com/azure-storage/azurite:latest")).withExposedPorts(10001, 10002,
-                    10000);
-	
-	String storageConnectionString = String.format(
-            "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://%s:%s/devstoreaccount1;QueueEndpoint=http://%s:%s/devstoreaccount1",
-            azurite.getContainerIpAddress(), azurite.getMappedPort(10002), azurite.getContainerIpAddress(),
-            azurite.getMappedPort(10001));*/
-	
-	String storageConnectionString = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1";
-	
-	String containerInputBlob = "input";
-    String containerErrorBlob = "error";
 
     @Mock
     ExecutionContext context;
@@ -57,6 +42,7 @@ class CuCsvParsingTest {
 
     @Mock
     CuCsvService cuCsvService;
+    
 
     private String readFromInputStream(InputStream inputStream) throws IOException {
         StringBuilder resultStringBuilder = new StringBuilder();
@@ -72,29 +58,61 @@ class CuCsvParsingTest {
     }
 
     @Test
-    void runOkTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException {
+    void checkParseFileOKTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException {
     	
-    	//CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerInputBlob).createIfNotExists();
-
-    	//CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerErrorBlob).createIfNotExists();
-
-
-        when(context.getLogger()).thenReturn(Logger.getLogger("InfoLogging"));
-
-        ClassLoader classLoader = getClass().getClassLoader();
+    	ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
         String data = readFromInputStream(inputStream);
-
+    	
+    	Logger logger = Logger.getLogger("testlogging");
+    	 
+    	// precondition
+        when(context.getLogger()).thenReturn(logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(null, logger);
+    	    
         byte[] file = data.getBytes();
 
-        Logger logger = Logger.getLogger("InfoLogging");
-
         function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
-
+        
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).parseCsv(data);
-        //verify(cuCsvService, times(1)).uploadCsv(containerErrorBlob,"2021-04-21_pagcorp0007_0101108TS.csv",data);
-        //verify(cuCsvService, times(1)).deleteCsv(containerInputBlob,data);
+    }
+    
+    @Test
+    void checkParseFileKOTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException {
+    	
+    	ClassLoader classLoader = getClass().getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS2_KO.csv");
+        String data = readFromInputStream(inputStream);
+    	
+    	Logger logger = Logger.getLogger("testlogging");
+        
+        Reader reader = new StringReader(data);
+        CsvToBean<PaymentNotice> csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+		.withSeparator(';')
+		.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+		.withOrderedResults(true)
+		.withVerifier(new PaymentNoticeVerifier())
+		.withType(PaymentNotice.class)
+		.withIgnoreLeadingWhiteSpace(true)
+		.withThrowExceptions(false)
+		.build();
+    	
+    	 
+    	// precondition
+        when(context.getLogger()).thenReturn(logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(null, logger);
+        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+    	
+        
+        byte[] file = data.getBytes();
+
+        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_KO.csv", context);
+        
+        verify(context, times(1)).getLogger();
+        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).uploadCsv(null,"2021-04-21_pagcorp0007_0101108TS2_KO.csv",null);
+        verify(cuCsvService, times(1)).deleteCsv(null,"2021-04-21_pagcorp0007_0101108TS2_KO.csv");
 
     }
 }

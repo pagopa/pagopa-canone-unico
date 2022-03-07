@@ -20,7 +20,7 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 		
 		// check unique id
 		if (!unique.add(bean.getId())) {
-			errors.add("Duplicated ID '"+bean.getId()+"' found");
+			errors.add("Duplicated ID '"+bean.getId()+"' found.");
 		}
 		
 		// check mutual exclusion pa_id_istat | pa_id_catasto | pa_id_fiscal_code
