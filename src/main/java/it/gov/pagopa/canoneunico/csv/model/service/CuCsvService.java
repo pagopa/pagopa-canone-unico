@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +29,8 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
+import it.gov.pagopa.canoneunico.entity.IuvNumber;
+import it.gov.pagopa.canoneunico.iuvgenerator.IuvCodeBusiness;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
@@ -135,5 +139,34 @@ public class CuCsvService {
     	}
 	    return csv.toString();
     }
+    
+    
+    
+    private String generateIUV(String idDominioPa, int segregationCode, int auxDigit) {
+    	String zone = "Europe/Paris";
+		Long lastNumber = 1l;
+		IuvNumber incrementalIuvNumber = null;
+		//IuvNumber incrementalIuvNumber = incrementalIuvNumberRepository.findByIdDominioPaAndAnno(idDominioPa,
+			//	LocalDateTime.now(ZoneId.of(this.zone)).getYear());
+		if (incrementalIuvNumber != null) {
+			lastNumber = (incrementalIuvNumber.getLastUsedNumber() + 1);
+			incrementalIuvNumber.setLastUsedNumber(lastNumber);
+
+		} else {
+
+			incrementalIuvNumber = new IuvNumber();
+			incrementalIuvNumber.setAnno(LocalDateTime.now(ZoneId.of(zone)).getYear());
+			incrementalIuvNumber.setIdDominioPa(idDominioPa);
+			incrementalIuvNumber.setLastUsedNumber(lastNumber);
+		}
+		//incrementalIuvNumberRepository.saveAndFlush(incrementalIuvNumber);
+
+		IuvCodeGenerator iuvCodeGenerator = new IuvCodeGenerator.Builder().setAuxDigit(auxDigit)
+				.setSegregationCode(segregationCode).build();
+
+		IuvCodeBusiness.validate(iuvCodeGenerator);
+		return auxDigit + IuvCodeBusiness.generateIUV(segregationCode, lastNumber + "");
+
+	}
     
 }
