@@ -152,8 +152,6 @@
 
     <build>
         <plugins>
-
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -206,7 +204,6 @@
                 <version>0.8.7</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/config/*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -217,7 +214,7 @@
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>prepare-package</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
