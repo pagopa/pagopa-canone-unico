@@ -17,6 +17,7 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.service.CuCsvService;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
+import lombok.Getter;
 
 /**
  * Azure Functions with Azure Blob trigger.
@@ -49,7 +50,7 @@ public class CuCsvParsing {
 
     	logger.log(Level.INFO, () -> "Blob Trigger function executed at: " + LocalDateTime.now() + " for blob " + fileName);
 
-    	CuCsvService csvService = this.getCuCsvServiceInstance(logger);
+    	CuCsvService csvService = this.getCuCsvServiceInstance(this.storageConnectionString, logger);
 
     	// CSV File
     	String converted = new String(content, StandardCharsets.UTF_8);
@@ -79,11 +80,11 @@ public class CuCsvParsing {
     	}
 
     	// convert `CsvToBean` object to list of payments
-    	final List<PaymentNotice> payments = csvToBean.parse();
+    	// final List<PaymentNotice> payments = csvToBean.parse();
     	// TODO: save in Table
     }
     
-    public CuCsvService getCuCsvServiceInstance(Logger logger) {
-        return new CuCsvService(this.storageConnectionString, logger);
+    public CuCsvService getCuCsvServiceInstance(String storageConnectionString, Logger logger) {
+        return new CuCsvService(storageConnectionString, logger);
     }
 }

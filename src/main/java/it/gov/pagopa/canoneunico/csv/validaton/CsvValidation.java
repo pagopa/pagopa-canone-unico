@@ -1,5 +1,6 @@
 package it.gov.pagopa.canoneunico.csv.validaton;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.opencsv.bean.CsvToBean;
@@ -21,8 +22,8 @@ public class CsvValidation {
     }
     
     private static void checkConstraintErrors (DebtPositionValidationCsvError debtPosValidationErr, CsvToBean<PaymentNotice> csvToBean) {
-    	final List<PaymentNotice> payments = csvToBean.parse();
-    	List<CsvException> parsingExceptions = csvToBean.getCapturedExceptions();
+    	final List<PaymentNotice> payments = csvToBean!=null ? csvToBean.parse() : new ArrayList<>();
+    	List<CsvException> parsingExceptions = csvToBean!=null ? csvToBean.getCapturedExceptions(): new ArrayList<>();
     	debtPosValidationErr.setTotalNumberRows(payments.size()+parsingExceptions.size());
     	debtPosValidationErr.setNumberInvalidRows(parsingExceptions.size());
     	if (!parsingExceptions.isEmpty()) {
