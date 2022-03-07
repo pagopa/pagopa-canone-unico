@@ -37,23 +37,23 @@ steps:
         sonar.coverage.exclusions=**/config/*,**/*Mock*,**/model/**,**/entity/*,**/util/**
         sonar.cpd.exclusions=**/model/**,**/entity/*,**/util/**
 
-#  - task: Maven@3
-#    displayName: 'Run Junit Test'
-#    inputs:
-#      mavenPomFile: 'pom.xml'
-#      goals: 'clean verify'
-#      publishJUnitResults: true
-#      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#      codeCoverageToolOption: 'JaCoCo'
-#      javaHomeOption: 'JDKVersion'
-#      jdkVersionOption: '1.11'
-#      mavenVersionOption: 'Default'
-#      mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
-#      mavenAuthenticateFeed: false
-#      effectivePomSkip: false
-#      sonarQubeRunAnalysis: true
-#      isJacocoCoverageReportXML: true
-#      sqMavenPluginVersionChoice: 'latest'
+  - task: Maven@3
+    displayName: 'Run Junit Test'
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'clean verify'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      codeCoverageToolOption: 'JaCoCo'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.11'
+      mavenVersionOption: 'Default'
+      mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: true
+      isJacocoCoverageReportXML: true
+      sqMavenPluginVersionChoice: 'latest'
 
 
   - task: Maven@3
