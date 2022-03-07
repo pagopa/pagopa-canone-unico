@@ -74,11 +74,9 @@ class CuCsvParsingTest {
     @Test
     void runOkTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException {
     	
-    	CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerInputBlob)
-        .createIfNotExists();
+    	//CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerInputBlob).createIfNotExists();
 
-    	CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerErrorBlob)
-        .createIfNotExists();
+    	//CloudStorageAccount.parse(storageConnectionString).createCloudBlobClient().getContainerReference(this.containerErrorBlob).createIfNotExists();
 
 
         when(context.getLogger()).thenReturn(Logger.getLogger("InfoLogging"));
