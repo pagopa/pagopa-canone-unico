@@ -1,0 +1,20 @@
+id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note
+000001;;C292;;;;;;383700;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000002;;M320;;;;;;1179400;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000003;;A809;;;;;;753000;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000004;;C777;;;;;;271800;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000005;;D867;;;;;;166200;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000006;;F097;;;;;;731850;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000007;;F139;;;;;;497250;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000008;;E675;;;;;;921750;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000009;;H017;;;;;;474300;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000010;;H034;;;;;;84450;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000011;;H437;;;;;;148500;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000012;;I310;;;;;;324450;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000013;;I472;;;;;;1175850;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000014;;F257;;;;;;178500;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000015;;I473;;;;;;1041750;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000016;;D548;;;;;;80000;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000017;;F257;;;;;;303750;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000018;;G479;;;;;;172230;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
+000019;;D612;;;;;;341760;04245520376;Hera Spa;heraspafiscale@pec.gruppohera.it;;
