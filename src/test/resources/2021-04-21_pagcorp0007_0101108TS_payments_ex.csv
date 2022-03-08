@@ -1,0 +1,4 @@
+id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note
+000001;997021;C292;01065340372;316C4;aaaaa@aaa.ex.it;;;383700;04245520376;Lorem ipsum;lorem@pec.loremit;1234563366522;
+000002;997061;M320;03334231200;BR52H;bbbb@bbb.ex.it;;;1179400;04245520376;Lorem ipsum;lorem@pec.lorem.it;1234563366523;
+000003;990003;A809;80002170407;ALNNB;cccc@ccc.ex.it;;;753000;04245520376;Lorem ipsum;lorem@pec.lorem.it;1234563366524;
