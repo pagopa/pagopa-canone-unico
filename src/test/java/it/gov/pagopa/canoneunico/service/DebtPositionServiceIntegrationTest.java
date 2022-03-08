@@ -201,12 +201,10 @@ class DebtPositionServiceIntegrationTest {
     List<List<List<String>>> data = debtPositionService.getDebtPositionListByPk(pks);
     // Output expected NoSuchElementExceptions.
 
-    assertTrue(data.get(0).size() == 5);
-    assertTrue(data.get(1).size() == 5);
-
-    assertTrue(data.get(3).size() == 0);
-
-
+    assertTrue(data.get(0).size() == 5); // all CREATED
+    assertTrue(data.get(1).size() == 5); // all CREATED
+    assertTrue(data.get(2).size() == 0); // not all CREATED
+    assertTrue(data.get(3).size() == 0); // doesn't exists
   }
 
   @Test
