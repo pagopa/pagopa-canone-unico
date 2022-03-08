@@ -18,7 +18,7 @@
         <azure.storage.blob.version>12.14.3</azure.storage.blob.version>
         <azure.storage.queue.version>12.11.3</azure.storage.queue.version>
         <azure.storage.version>8.6.6</azure.storage.version>
-        <resteasy.version>3.15.1.Final</resteasy.version>
+        <resteasy.version>4.5.7.Final</resteasy.version>
         <functionAppName>canone-unico-20210712115055634</functionAppName>
     </properties>
 
