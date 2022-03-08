@@ -35,8 +35,8 @@ public class DebtPositionService {
   private String containerBlobOut;
   private Logger logger;
 
-  private final String csvHd =
-      "id,pa_id_istat,pa_id_catasto,pa_id_fiscal_code,pa_id_cbill,pa_pec_email,pa_referent_email,pa_referent_name,amount,debtor_id_fiscal_code,debtor_name,debtor_email,payment_notice_number,note";
+  private static final String CSV_HEAD =
+      "id,status,pa_id_istat,pa_id_catasto,pa_id_fiscal_code,pa_id_cbill,pa_pec_email,pa_referent_email,pa_referent_name,amount,debtor_id_fiscal_code,debtor_name,debtor_email,payment_notice_number,note";
 
   public DebtPositionService(
       String storageConnectionString,
@@ -119,7 +119,7 @@ public class DebtPositionService {
                   table.execute(
                       TableQuery.from(DebtPositionEntity.class).where(combinedFilterCreated))) {
                 List<String> rowsItem = new ArrayList<>();
-                Collections.addAll(
+                  Collections.addAll(
                     rowsItem,
                     entity.getRowKey(),
                     entity.getStatus(),
@@ -153,7 +153,7 @@ public class DebtPositionService {
 
     File csvOutputFile = new File(csvFileName);
 
-    dataLines.add(0, List.of(csvHd.split(",")));
+    dataLines.add(0, List.of(CSV_HEAD.split(",")));
     try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
       dataLines.stream().map(this::convertToCSV).forEach(pw::println);
     }

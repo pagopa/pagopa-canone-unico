@@ -1,6 +1,7 @@
 package it.gov.pagopa.canoneunico.service;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -105,7 +106,7 @@ class DebtPositionServiceIntegrationTest {
     List<String> fileNames =
         containerClient.listBlobs().stream().map(BlobItem::getName).collect(Collectors.toList());
 
-    assertTrue(pks.size() == noBlob);
+    assertEquals(noBlob,pks.size());
   }
 
   @Test
@@ -133,7 +134,7 @@ class DebtPositionServiceIntegrationTest {
     List<List<List<String>>> data = debtPositionService.getDebtPositionListByPk(pks);
     // Output expected NoSuchElementExceptions.
 
-    assertTrue(data.get(0).size() == 0);
+    assertEquals(data.get(0).size() , 0);
   }
 
   @Test
@@ -201,10 +202,10 @@ class DebtPositionServiceIntegrationTest {
     List<List<List<String>>> data = debtPositionService.getDebtPositionListByPk(pks);
     // Output expected NoSuchElementExceptions.
 
-    assertTrue(data.get(0).size() == 5); // all CREATED
-    assertTrue(data.get(1).size() == 5); // all CREATED
-    assertTrue(data.get(2).size() == 0); // not all CREATED
-    assertTrue(data.get(3).size() == 0); // doesn't exists
+    assertEquals(data.get(0).size() , 5); // all CREATED
+    assertEquals(data.get(1).size() , 5); // all CREATED
+    assertEquals(data.get(2).size() , 0); // not all CREATED
+    assertEquals(data.get(3).size() , 0); // doesn't exists
   }
 
   @Test
