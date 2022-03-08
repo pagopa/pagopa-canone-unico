@@ -18,9 +18,8 @@ import com.opencsv.bean.CsvToBean;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
-import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
+import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
-import lombok.Getter;
 
 /**
  * Azure Functions with Azure Blob trigger.
@@ -58,34 +57,39 @@ public class CuCsvParsing {
     	CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(converted);
 
     	// Check if CSV is valid 
-    	DebtPositionValidationCsvError csvValidationErrors = CsvValidation.checkCsvIsValid(fileName, csvToBean);
-    	if (!csvValidationErrors.getErrorRows().isEmpty()) {
-    		// Create log info
-    		String header = LOG_VALIDATION_PREFIX + String.format(LOG_VALIDATION_ERROR_HEADER, 
-    				fileName, 
-    				csvValidationErrors.getNumberInvalidRows()+"/"+csvValidationErrors.getTotalNumberRows());
-    		List<String> details = new ArrayList<>();
-    		csvValidationErrors.getErrorRows().stream().forEach(exception -> { 
-    			details.add(String.format(LOG_VALIDATION_ERROR_DETAIL, exception.getRowNumber()-1, exception.getErrorsDetail()));
-    		});
-    		logger.log(Level.SEVERE, () -> header + System.lineSeparator() + details);
-
-    		String errorCSV = csvService.generateErrorCsv(converted, csvValidationErrors);
-    		// Create file in error blob storage
-    		csvService.uploadCsv(fileName, errorCSV);
-    		// Delete the original file from input blob storage
-    		csvService.deleteCsv(fileName);
+    	DebtPositionValidationCsv csvValidation = CsvValidation.checkCsvIsValid(fileName, csvToBean);
+    	
+    	if (csvValidation.getErrorRows().isEmpty()) {
+    		// If valid file -> save on table and write on queue 
+    		try {
+        		// convert `CsvToBean` object to list of payments
+            	final List<PaymentNotice> payments = csvValidation.getPayments();
+            	// save in Table
+    			csvService.saveDebtPosition(fileName, payments);
+    		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
+    			logger.log(Level.SEVERE, () -> "[CuCsvParsingFunction Error] Generic Error " + e.getMessage() + " "
+                        + e.getCause() + " - fileName " + fileName);
+    		}
+    	}
+    	else {
+    		// If not valid file -> write log error, save on 'error' blob space and delete from 'input' blob space
+			String header = LOG_VALIDATION_PREFIX + String.format(LOG_VALIDATION_ERROR_HEADER, 
+					fileName, 
+					csvValidation.getNumberInvalidRows()+"/"+csvValidation.getTotalNumberRows());
+			List<String> details = new ArrayList<>();
+			csvValidation.getErrorRows().stream().forEach(exception -> { 
+				details.add(String.format(LOG_VALIDATION_ERROR_DETAIL, exception.getRowNumber()-1, exception.getErrorsDetail()));
+			});
+			logger.log(Level.SEVERE, () -> header + System.lineSeparator() + details);
+	
+			String errorCSV = csvService.generateErrorCsv(converted, csvValidation);
+			// Create file in error blob storage
+			csvService.uploadCsv(fileName, errorCSV);
+			// Delete the original file from input blob storage
+			csvService.deleteCsv(fileName);
     	}
 
-    	try {
-    		// convert `CsvToBean` object to list of payments
-        	final List<PaymentNotice> payments = csvToBean.parse();
-        	// save in Table
-			csvService.saveDebtPosition(fileName, payments);
-		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
-			logger.log(Level.SEVERE, () -> "[CuCsvParsingFunction Error] Generic Error " + e.getMessage() + " "
-                    + e.getCause() + " - fileName " + fileName);
-		}
+    	
     	
     	logger.log(Level.INFO, () -> "[CuCsvParsingFunction END] ended at: " + LocalDateTime.now() + " - fileName " + fileName);
 		

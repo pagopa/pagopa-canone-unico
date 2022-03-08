@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.opencsv.exceptions.CsvException;
+
+import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 
 
@@ -15,11 +18,13 @@ import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class DebtPositionValidationCsvError {
+public class DebtPositionValidationCsv {
 
     private String csvFilename;
     private Integer totalNumberRows;
     private Integer numberInvalidRows;
+    private List<PaymentNotice> payments;
+	private List<CsvException> parsingExceptions;
     @Builder.Default
     private List<DebtPositionErrorRow> errorRows = new ArrayList<>();
 

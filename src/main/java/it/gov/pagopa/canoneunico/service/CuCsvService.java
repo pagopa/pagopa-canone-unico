@@ -40,7 +40,7 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
-import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
+import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 
@@ -98,15 +98,18 @@ public class CuCsvService {
     }
     
     public void saveDebtPosition(String fileName, List<PaymentNotice> payments) throws InvalidKeyException, URISyntaxException, StorageException {
+    	
+    	this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file" + fileName);
+    	
     	 CloudTable table = CloudStorageAccount.parse(storageConnectionString)
                  .createCloudTableClient()
                  .getTableReference(this.debtPositionTable);
     	 
     	 TableBatchOperation batchOperation = new TableBatchOperation();
     	 
-    	 this.getDebtPositionEntities(fileName, payments).forEach(batchOperation::insert);
+    	 //this.getDebtPositionEntities(fileName, payments).forEach(batchOperation::insert);
     	 
-    	 table.execute(batchOperation);
+    	 //table.execute(batchOperation);
     	 
     }
     
@@ -126,7 +129,7 @@ public class CuCsvService {
         });
     }
     
-    public String generateErrorCsv (String converted, DebtPositionValidationCsvError csvValidationErrors)  {
+    public String generateErrorCsv (String converted, DebtPositionValidationCsv csvValidationErrors)  {
     	
     	StringWriter csv = new StringWriter();
     	
@@ -167,7 +170,7 @@ public class CuCsvService {
     	    
     	    String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_mail;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;"
     	    		+ "debtor_name;debtor_email;payment_notice_number;note;errors_note";
-    	    String footer ="numLinesError/numTotLines;" + csvValidationErrors.getNumberInvalidRows()+"/"+csvValidationErrors.getTotalNumberRows();
+    	    String footer ="nLinesError/nTotLines:" + csvValidationErrors.getNumberInvalidRows()+"/"+csvValidationErrors.getTotalNumberRows();
             csv.append(headers);
             csv.append(System.lineSeparator());
     	    csv.append(writer.toString());

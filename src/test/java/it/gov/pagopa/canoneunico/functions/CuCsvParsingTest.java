@@ -25,6 +25,7 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.storage.StorageException;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
@@ -65,10 +66,28 @@ class CuCsvParsingTest {
         String data = readFromInputStream(inputStream);
     	
     	Logger logger = Logger.getLogger("testlogging");
+    	
+    	
+    	Reader reader = new StringReader(data);
+    	// Create Mapping Strategy to arrange the column name
+    	HeaderColumnNameMappingStrategy<PaymentNotice> mappingStrategy=
+    			new HeaderColumnNameMappingStrategy<>();
+    	mappingStrategy.setType(PaymentNotice.class);
+        CsvToBean<PaymentNotice> csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+        		.withSeparator(';')
+    			.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+    			.withOrderedResults(true)
+    			.withMappingStrategy(mappingStrategy)
+    			.withVerifier(new PaymentNoticeVerifier())
+    			.withType(PaymentNotice.class)
+    			.withIgnoreLeadingWhiteSpace(true)
+    			.withThrowExceptions(false)
+    			.build();
     	 
     	// precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
     	    
         byte[] file = data.getBytes();
 
