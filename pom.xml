@@ -18,11 +18,8 @@
         <azure.storage.blob.version>12.14.3</azure.storage.blob.version>
         <azure.storage.queue.version>12.11.3</azure.storage.queue.version>
         <azure.storage.version>8.6.6</azure.storage.version>
-        <resteasy.version>3.15.1.Final</resteasy.version>
-        <lombok.version>1.18.22</lombok.version>
-        <opencsv.version>5.6</opencsv.version>
-        <modelmapper.version>3.0.0</modelmapper.version>
-        <javax.validation.version>2.0.1.Final</javax.validation.version>
+        <azure.data.tables.version>12.2.0</azure.data.tables.version>
+        <resteasy.version>4.5.7.Final</resteasy.version>
         <functionAppName>canone-unico-20210712115055634</functionAppName>
     </properties>
 
@@ -54,35 +51,30 @@
             <version>${azure.storage.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-data-tables</artifactId>
+            <version>${azure.data.tables.version}</version>
+        </dependency>
         <!-- Azure END-->
-        
-        <!-- Util START-->
 
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>${opencsv.version}</version>
         </dependency>
 
-		<dependency>
-			<groupId>com.opencsv</groupId>
-			<artifactId>opencsv</artifactId>
-			<version>${opencsv.version}</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.modelmapper</groupId>
-			<artifactId>modelmapper</artifactId>
-			<version>${modelmapper.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>${modelmapper.version}</version>
+        </dependency>
 
-	    <dependency>
-		  <groupId>javax.validation</groupId>
-		  <artifactId>validation-api</artifactId>
-		  <version>${javax.validation.version}</version>
-	    </dependency>
-
-        <!-- Util END-->
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <version>${javax.validation.version}</version>
+        </dependency>
 
         <!-- Test START-->
 
@@ -176,7 +168,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
+            <version>1.18.22</version>
             <scope>provided</scope>
         </dependency>
 
@@ -238,7 +230,6 @@
                 <version>0.8.7</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/config/*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
