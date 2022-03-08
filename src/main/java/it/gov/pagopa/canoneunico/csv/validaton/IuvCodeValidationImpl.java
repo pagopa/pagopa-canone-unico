@@ -7,7 +7,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
-import it.gov.pagopa.canoneunico.csv.model.service.IuvCodeGenerator;
+import it.gov.pagopa.canoneunico.iuvgenerator.IuvCodeGenerator;
 import it.gov.pagopa.canoneunico.iuvgenerator.exception.ValidationException;
 
 

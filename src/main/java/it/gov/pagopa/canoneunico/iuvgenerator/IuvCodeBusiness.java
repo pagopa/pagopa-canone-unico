@@ -1,6 +1,5 @@
 package it.gov.pagopa.canoneunico.iuvgenerator;
 
-import it.gov.pagopa.canoneunico.csv.model.service.IuvCodeGenerator;
 import it.gov.pagopa.canoneunico.csv.validaton.IuvCodeValidation;
 import it.gov.pagopa.canoneunico.csv.validaton.IuvCodeValidationImpl;
 

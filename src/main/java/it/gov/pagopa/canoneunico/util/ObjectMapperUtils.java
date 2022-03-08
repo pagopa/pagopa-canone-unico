@@ -8,9 +8,13 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
 import org.modelmapper.convention.MatchingStrategies;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class ObjectMapperUtils {
 
     private static final ModelMapper modelMapper;
+    private static final ObjectMapper objectMapper;
 
     /**
      * Model mapper property setting are specified in the following block.
@@ -20,6 +24,7 @@ public class ObjectMapperUtils {
     static {
         modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        objectMapper = new ObjectMapper();
     }
 
     /**
@@ -66,4 +71,10 @@ public class ObjectMapperUtils {
         modelMapper.map(source, destination);
         return destination;
     }
+    
+    public static String writeValueAsString(Object value) throws JsonProcessingException {
+    	return objectMapper.writeValueAsString(value);
+    }
+    
+    
 }

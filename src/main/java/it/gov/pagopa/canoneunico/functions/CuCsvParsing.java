@@ -1,6 +1,8 @@
 package it.gov.pagopa.canoneunico.functions;
 
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +13,13 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.BlobTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.storage.StorageException;
 import com.opencsv.bean.CsvToBean;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
-import it.gov.pagopa.canoneunico.csv.model.service.CuCsvService;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsvError;
+import it.gov.pagopa.canoneunico.service.CuCsvService;
 import lombok.Getter;
 
 /**
@@ -31,11 +34,7 @@ public class CuCsvParsing {
 	private static final String LOG_VALIDATION_PREFIX       = "[CuCsvParsingFunction Error] Validation Error: ";
 	private static final String LOG_VALIDATION_ERROR_HEADER = "Error during csv validation {filename = %s; nLinesError/nTotLines = %s}";
 	private static final String LOG_VALIDATION_ERROR_DETAIL = "{line = %s } - {errors = %s}";
-    private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
-    private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
     
-
     /**
      * This function will be invoked when a new or updated blob is detected at the
      * specified path. The blob contents are provided as input to this function.
@@ -47,10 +46,9 @@ public class CuCsvParsing {
     		@BindingName("name") String fileName, final ExecutionContext context) {
 
     	Logger logger = context.getLogger();
+    	logger.log(Level.INFO, () -> "[CuCsvParsingFunction START] executed at: " + LocalDateTime.now() + " - fileName " + fileName);
 
-    	logger.log(Level.INFO, () -> "Blob Trigger function executed at: " + LocalDateTime.now() + " for blob " + fileName);
-
-    	CuCsvService csvService = this.getCuCsvServiceInstance(this.storageConnectionString, logger);
+    	CuCsvService csvService = this.getCuCsvServiceInstance(logger);
 
     	// CSV File
     	String converted = new String(content, StandardCharsets.UTF_8);
@@ -74,17 +72,26 @@ public class CuCsvParsing {
 
     		String errorCSV = csvService.generateErrorCsv(converted, csvValidationErrors);
     		// Create file in error blob storage
-    		csvService.uploadCsv(containerErrorBlob, fileName, errorCSV);
+    		csvService.uploadCsv(fileName, errorCSV);
     		// Delete the original file from input blob storage
-    		csvService.deleteCsv(containerInputBlob, fileName);
+    		csvService.deleteCsv(fileName);
     	}
 
-    	// convert `CsvToBean` object to list of payments
-    	// final List<PaymentNotice> payments = csvToBean.parse();
-    	// TODO: save in Table
+    	try {
+    		// convert `CsvToBean` object to list of payments
+        	final List<PaymentNotice> payments = csvToBean.parse();
+        	// save in Table
+			csvService.saveDebtPosition(fileName, payments);
+		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
+			logger.log(Level.SEVERE, () -> "[CuCsvParsingFunction Error] Generic Error " + e.getMessage() + " "
+                    + e.getCause() + " - fileName " + fileName);
+		}
+    	
+    	logger.log(Level.INFO, () -> "[CuCsvParsingFunction END] ended at: " + LocalDateTime.now() + " - fileName " + fileName);
+		
     }
     
-    public CuCsvService getCuCsvServiceInstance(String storageConnectionString, Logger logger) {
-        return new CuCsvService(storageConnectionString, logger);
+    public CuCsvService getCuCsvServiceInstance(Logger logger) {
+        return new CuCsvService(logger);
     }
 }

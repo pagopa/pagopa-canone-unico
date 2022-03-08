@@ -1,4 +1,4 @@
-package it.gov.pagopa.canoneunico.csv.model.service;
+package it.gov.pagopa.canoneunico.iuvgenerator;
 
 import javax.validation.constraints.Digits;
 
