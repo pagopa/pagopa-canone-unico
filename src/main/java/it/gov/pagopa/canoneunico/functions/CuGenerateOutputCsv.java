@@ -64,16 +64,22 @@ public class CuGenerateOutputCsv {
                         + " : "
                         + e.getData().size());
             try {
-              if (e.getData().size() > 0) {
+              if (!e.getData().isEmpty()) {
                 debtPositionService.uploadOutFile(e.getCsvFileName(), e.getData());
               }
 
             } catch (BlobStorageException ex) {
               logger.log(
-                      Level.SEVERE, () -> "CuGenerateOutputCsvBatchFunction error " + e.getCsvFileName() + " : " + ex.getLocalizedMessage() );
+                  Level.SEVERE,
+                  () ->
+                      "CuGenerateOutputCsvBatchFunction error "
+                          + e.getCsvFileName()
+                          + " : "
+                          + ex.getLocalizedMessage());
             } catch (IOException ex) {
               logger.log(
-                      Level.SEVERE, () -> "CuGenerateOutputCsvBatchFunction error: " + ex.getLocalizedMessage());
+                  Level.SEVERE,
+                  () -> "CuGenerateOutputCsvBatchFunction error: " + ex.getLocalizedMessage());
             }
           });
     } catch (URISyntaxException | InvalidKeyException | StorageException e) {

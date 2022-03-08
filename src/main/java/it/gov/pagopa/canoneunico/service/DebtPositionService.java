@@ -1,7 +1,6 @@
 package it.gov.pagopa.canoneunico.service;
 
 import com.azure.core.util.BinaryData;
-import com.azure.data.tables.models.ListEntitiesOptions;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -9,9 +8,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import com.microsoft.azure.storage.table.CloudTable;
-import com.microsoft.azure.storage.table.TableOperation;
 import com.microsoft.azure.storage.table.TableQuery;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
@@ -21,9 +18,9 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -39,7 +36,7 @@ public class DebtPositionService {
   private Logger logger;
 
   private final String csvHd =
-      "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+      "id,pa_id_istat,pa_id_catasto,pa_id_fiscal_code,pa_id_cbill,pa_pec_email,pa_referent_email,pa_referent_name,amount,debtor_id_fiscal_code,debtor_name,debtor_email,payment_notice_number,note";
 
   public DebtPositionService(
       String storageConnectionString,
@@ -102,10 +99,16 @@ public class DebtPositionService {
                   TableQuery.combineFilters(
                       partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
 
-              Boolean isExistInsertedOrError =
-                  (table.execute(TableQuery.from(DebtPositionEntity.class).where(combinedNotOk)))
-                      .iterator()
-                      .hasNext();
+              Boolean isExistInsertedOrError = Boolean.FALSE;
+
+              try {
+                isExistInsertedOrError =
+                    (table.execute(TableQuery.from(DebtPositionEntity.class).where(combinedNotOk)))
+                        .iterator()
+                        .hasNext();
+              } catch (NoSuchElementException exception) {
+                return rowsList;
+              }
 
               // not all entity of pk are CREATED
               if (Boolean.TRUE.equals(isExistInsertedOrError)) {
@@ -149,6 +152,8 @@ public class DebtPositionService {
     BlobClient blobClient = containerBlobOutClient.getBlobClient(csvFileName);
 
     File csvOutputFile = new File(csvFileName);
+
+    dataLines.add(0, List.of(csvHd.split(",")));
     try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
       dataLines.stream().map(this::convertToCSV).forEach(pw::println);
     }
@@ -157,13 +162,12 @@ public class DebtPositionService {
 
     logger.log(Level.INFO, () -> "uploadOutFile " + csvFileName + " done! ");
 
-      // delete blob in INPUT container
+    // delete blob in INPUT container
     BlobContainerClient containerBlobInClient =
         blobServiceClient.getBlobContainerClient(this.containerBlobIn);
     BlobClient blobInClient = containerBlobInClient.getBlobClient(csvFileName);
     blobInClient.delete();
     logger.log(Level.INFO, () -> "delete file " + csvFileName + " done! ");
-
   }
 
   private String convertToCSV(List<String> data) {
