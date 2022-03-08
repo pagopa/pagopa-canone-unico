@@ -10,9 +10,8 @@ public interface IuvCodeValidation {
 
     /**
      * Validate the iuvCodeGenerator
-     * 
-     * @param iuvCodeGenerator
-     *            the IUV code generator
+     *
+     * @param iuvCodeGenerator the IUV code generator
      * @throws ValidationException
      */
     void validate(IuvCodeGenerator iuvCodeGenerator) throws ValidationException;
@@ -20,7 +19,7 @@ public interface IuvCodeValidation {
     /**
      * Constraints validation by annotation of the single input of the
      * iuvCodeGenerator
-     * 
+     *
      * @param objectToValidate
      * @throws ValidationException
      */

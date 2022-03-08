@@ -9,17 +9,16 @@ import it.gov.pagopa.canoneunico.csv.validaton.IuvCodeValidationImpl;
 public class IuvCodeBusiness {
 
     private IuvCodeBusiness() {
-	throw new IllegalStateException("Utility class");
+        throw new IllegalStateException("Utility class");
 
     }
 
     /**
      * Generates the <code>iuv</code>
-     * 
+     *
      * @param segregationCode
      * @return the <code>iuv</code>
      * @see pagopa.gov.it.toolkit.iuvGenerator.bean.IuvCodeGenerator
-     * 
      */
     public static String generateIUV(Integer segregationCode, String nextValSequence) {
         IuvAlghoritmGenerator iuvGenerator = new IuvAlghoritmGenerator.Builder().build();
@@ -28,9 +27,8 @@ public class IuvCodeBusiness {
 
     /**
      * Validates a iuvCodeGenerator
-     * 
-     * @param iuvCodeGenerator
-     *            the bean to validate.
+     *
+     * @param iuvCodeGenerator the bean to validate.
      * @see IuvCodeGenerator
      * @see pagopa.gov.it.toolkit.debtPositionGenerator.validation.DebtPositionValidationImpl
      */

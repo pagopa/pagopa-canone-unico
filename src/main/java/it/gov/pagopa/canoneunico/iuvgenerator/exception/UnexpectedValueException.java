@@ -8,12 +8,12 @@ public class UnexpectedValueException extends IllegalArgumentException {
 
 
     /**
-	 * generated serialVersionUID
-	 */
-	private static final long serialVersionUID = 4866573387331033063L;
+     * generated serialVersionUID
+     */
+    private static final long serialVersionUID = 4866573387331033063L;
 
-	/**
-     * 
+    /**
+     *
      */
     public UnexpectedValueException() {
     }

@@ -8,26 +8,25 @@ import it.gov.pagopa.canoneunico.iuvgenerator.exception.ValidationException;
 public interface IuvAlghoritmGenerator {
 
     /**
+     * Generates the IUV Code
+     *
+     * @param segregationCode the segregation code
+     * @return the IUV Code
+     */
+    String generate(Integer segregationCode, String nextValSequence);
+
+    /**
      * Initialization of <code>IuvAlghoritmGenerator</code> class
      */
-    public static class Builder {
+    class Builder {
 
         /**
          * Build the IuvAlghoritmGenerator based on <code>auxDigit</code>
-         * 
+         *
          * @return a new instance of <code>IuvAlghoritmGenerator</code>
          */
         public IuvAlghoritmGenerator build() throws ValidationException {
             return new IuvAlghoritmAuxDigit3();
         }
     }
-
-    /**
-     * Generates the IUV Code
-     * 
-     * @param segregationCode
-     *            the segregation code
-     * @return the IUV Code
-     */
-    String generate(Integer segregationCode, String nextValSequence);
 }

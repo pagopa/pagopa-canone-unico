@@ -7,7 +7,7 @@ import java.text.DecimalFormat;
  */
 public class IuvAlghoritmAuxDigit3 extends IuvAlghoritm {
 
-    private int auxDigit = 3;
+    private final int auxDigit = 3;
 
     /**
      * Protected constructor
@@ -25,7 +25,7 @@ public class IuvAlghoritmAuxDigit3 extends IuvAlghoritm {
     public String generate(Integer segregationCode, String nextValSequence) {
         String segregationCodeString = new DecimalFormat("00").format(segregationCode);
         String iuvBase13Digits = generateIuBase13Digits(nextValSequence);
-        String checkDigit = generateCheckDigit(String.valueOf(auxDigit) + segregationCodeString + iuvBase13Digits);
+        String checkDigit = generateCheckDigit(auxDigit + segregationCodeString + iuvBase13Digits);
         return segregationCodeString + iuvBase13Digits + checkDigit;
     }
 }

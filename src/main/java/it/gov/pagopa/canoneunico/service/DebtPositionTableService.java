@@ -19,11 +19,10 @@ import java.util.logging.Logger;
 
 public class DebtPositionTableService {
 
+    private final Logger logger;
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
     private String tableName = System.getenv("DEBT_POSITIONS_TABLE");
     private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
-
-    private final Logger logger;
 
     public DebtPositionTableService(Logger logger) {
         this.logger = logger;
