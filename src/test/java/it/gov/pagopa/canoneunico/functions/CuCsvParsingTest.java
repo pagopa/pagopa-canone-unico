@@ -13,11 +13,14 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,7 +32,10 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
+import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
+import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +49,10 @@ class CuCsvParsingTest {
 
     @Mock
     CuCsvService cuCsvService;
+    
+    @Spy
+    CuCsvService cuCsvServiceSpy;
+    
     
 
     private String readFromInputStream(InputStream inputStream) throws IOException {
@@ -83,7 +93,19 @@ class CuCsvParsingTest {
     			.withIgnoreLeadingWhiteSpace(true)
     			.withThrowExceptions(false)
     			.build();
-    	 
+        List<PaymentNotice> payments = csvToBean.parse();
+        reader = new StringReader(data);
+        csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+        		.withSeparator(';')
+    			.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+    			.withOrderedResults(true)
+    			.withMappingStrategy(mappingStrategy)
+    			.withVerifier(new PaymentNoticeVerifier())
+    			.withType(PaymentNotice.class)
+    			.withIgnoreLeadingWhiteSpace(true)
+    			.withThrowExceptions(false)
+    			.build();
+        
     	// precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
@@ -95,6 +117,7 @@ class CuCsvParsingTest {
         
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).saveDebtPosition("2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
     
     @Test

@@ -7,19 +7,21 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.Lists;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.queue.CloudQueue;
@@ -40,24 +42,40 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.Status;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
+import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
+import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
+import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 
 
 
 public class CuCsvService {
-
+	
 	private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
     private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
     private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
 	private String debtPositionTable = System.getenv("DEBT_POSITIONS_TABLE");
 	private String debtPositionQueue = System.getenv("DEBT_POSITIONS_QUEUE");
+	private int batchSizeDebtPosQueue = 5;
+	private int batchSizeDebtPosTable = 5;
 	
     private Logger logger;
     
 
     public CuCsvService(Logger logger) {
+        this.logger = logger;
+    }
+    
+    public CuCsvService(String storageConnectionString, String containerInputBlob, String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
+    	this.storageConnectionString = storageConnectionString;
+    	this.containerInputBlob = containerInputBlob;
+    	this.containerErrorBlob = containerErrorBlob;
+    	this.debtPositionTable = debtPositionTable;
+    	this.debtPositionQueue = debtPositionQueue;		
         this.logger = logger;
     }
     
@@ -82,6 +100,8 @@ public class CuCsvService {
     }
     
     public void uploadCsv(String fileName, String content) {
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createBlob(containerErrorBlob);
     	BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
 		BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerErrorBlob);
@@ -91,42 +111,94 @@ public class CuCsvService {
     }
 
     public void deleteCsv(String fileName) {
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createBlob(containerInputBlob);
     	BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
 		BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerInputBlob);
 		cont.getBlobClient(fileName).delete();
     }
     
-    public void saveDebtPosition(String fileName, List<PaymentNotice> payments) throws InvalidKeyException, URISyntaxException, StorageException {
+    public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) {
+
+    	this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
     	
-    	this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file" + fileName);
-    	
-    	 CloudTable table = CloudStorageAccount.parse(storageConnectionString)
-                 .createCloudTableClient()
-                 .getTableReference(this.debtPositionTable);
-    	 
-    	 TableBatchOperation batchOperation = new TableBatchOperation();
-    	 
-    	 //this.getDebtPositionEntities(fileName, payments).forEach(batchOperation::insert);
-    	 
-    	 //table.execute(batchOperation);
-    	 
+
+    	List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
+
+    	List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileName, payments), batchSizeDebtPosTable);
+
+    	// save debt positions partition in table 
+    	IntStream.range(0, partitionDebtPositionEntities.size()).forEach(partitionAddIndex -> {
+    		try {
+    			this.addDebtPositionEntityList(partitionDebtPositionEntities.get(partitionAddIndex));
+    			logger.log(Level.INFO, () -> "[CuCsvService] Azure Table Storage - Add for partition index " + partitionAddIndex + " executed."); 
+    			savedDebtPositionEntities.addAll(partitionDebtPositionEntities.get(partitionAddIndex));
+    		} catch (InvalidKeyException | CanoneUnicoException | URISyntaxException | StorageException e) {
+    			logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Table Storage batch debt position entities: " + e.getMessage() + " " + e.getCause());
+    		}
+    	});    	 
+
+    	return savedDebtPositionEntities;
     }
     
-    public void pushDebtPosition(String fileName, List<PaymentNotice> payments) throws InvalidKeyException, URISyntaxException, StorageException  {
+    public boolean pushDebtPosition(String fileName, List<DebtPositionEntity> debtPositionEntities) {
+    	
+    	this.logger.log(Level.INFO, () -> "[CuCsvService] push debt position in queue for file " + fileName);
+    	
+    	AtomicBoolean isAllMsgPushed = new AtomicBoolean(true);
+    	
+    	DebtPositionMessage debtPositionMessage = new DebtPositionMessage();
+    	debtPositionMessage.setCsvFilename(fileName);
+    	
+    	List<List<DebtPositionRowMessage>> msgRows = Lists.partition(this.getDebtPositionQueueMsg(debtPositionEntities), batchSizeDebtPosQueue);	
+    	
+    	// push debt positions partition in queue 
+        IntStream.range(0, msgRows.size()).forEach(partitionAddIndex -> {
+            try {
+            	debtPositionMessage.setRows(msgRows.get(partitionAddIndex));
+                this.addDebtPositionMsg(debtPositionMessage);
+                logger.log(Level.INFO, () -> "[CuCsvService] Azure Queue Storage - Add for partition index " + partitionAddIndex + " executed.");
+            } catch (JsonProcessingException | StorageException | InvalidKeyException | URISyntaxException e) {
+            	logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Queue Storage batch debt position queue msg: " + e.getMessage() + " " + e.getCause());
+            	isAllMsgPushed.set(false);
+            }
+               
+        });
+        
+        return isAllMsgPushed.get();
+    }
+    
+    public void addDebtPositionMsg (DebtPositionMessage msg) throws InvalidKeyException, URISyntaxException, StorageException, JsonProcessingException {
+    	
+    	logger.log(Level.INFO, () -> "[CuCsvService] pushing debt position in queue ["+debtPositionQueue+"]: " + msg);
+    	
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createQueue(debtPositionQueue);
+    	
     	CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).
     			createCloudQueueClient()
-                .getQueueReference(this.debtPositionQueue);
-        queue.createIfNotExists();
+                .getQueueReference(debtPositionQueue);
+    	
+    	queue.addMessage(new CloudQueueMessage(ObjectMapperUtils.writeValueAsString(msg)));
+    }
+    
+    public void addDebtPositionEntityList (List<DebtPositionEntity> debtPositionEntities) throws CanoneUnicoException, InvalidKeyException, URISyntaxException, StorageException  {
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createTable(debtPositionTable);
 
-        this.getDebtPositionEntities(fileName, payments).forEach(msg -> {  
-                this.logger.log(Level.INFO, () -> "[CuCsvService] push debt position in queue " + msg);
-                try {
-					queue.addMessage(new CloudQueueMessage(ObjectMapperUtils.writeValueAsString(msg)));
-				} catch (JsonProcessingException | StorageException e) {
-					logger.log(Level.SEVERE, () -> "[CuCsvService] exception : " + e.getMessage() + " " + e.getCause());
-				}
-        });
+    	CloudTable table = CloudStorageAccount.parse(storageConnectionString)
+    			.createCloudTableClient()
+    			.getTableReference(debtPositionTable);
+
+    	TableBatchOperation batchOperation = new TableBatchOperation();
+
+    	debtPositionEntities.forEach(debtPosition -> {
+    		this.logger.log(Level.INFO, () -> "[CuCsvService] saving debt position in table ["+debtPositionTable+"]: " + debtPosition);
+    		batchOperation.insert(debtPosition);
+    	});
+
+    	table.execute(batchOperation);
     }
     
     public String generateErrorCsv (String converted, DebtPositionValidationCsv csvValidationErrors)  {
@@ -213,8 +285,30 @@ public class CuCsvService {
     		e.setCompanyName("company name");
     		e.setIban("iban");
     		
+    		e.setStatus(Status.INSERTED.toString());
+    		
+    		debtPositionEntities.add(e);
+    		
     	}
 		return debtPositionEntities;
+    }
+    
+    private List<DebtPositionRowMessage> getDebtPositionQueueMsg (List<DebtPositionEntity> debtPositionEntities) {
+    	List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>(); 
+    	for (DebtPositionEntity e: debtPositionEntities) {
+    		DebtPositionRowMessage row = new DebtPositionRowMessage();
+    		row.setId(e.getRowKey());
+    		row.setDebtorName(e.getDebtorName());
+    		row.setDebtorEmail(e.getDebtorEmail());
+    		row.setAmount(Long.parseLong(e.getAmount()));
+    		row.setIuv(e.getIuv());
+    		row.setIupd(e.getIupd());
+    		row.setFiscalCode(e.getFiscalCode());
+    		row.setCompanyName(e.getCompanyName());
+    		row.setIban(e.getIban());
+    		debtPositionMsgs.add(row);
+    	}
+		return debtPositionMsgs;
     }
 
     private String generateIUV(String idDominioPa, int segregationCode, int auxDigit) {
@@ -242,9 +336,7 @@ public class CuCsvService {
 
 		IuvCodeBusiness.validate(iuvCodeGenerator);
 		return auxDigit + IuvCodeBusiness.generateIUV(segregationCode, lastNumber + "");*/
-    	byte[] array = new byte[17]; // length is bounded by 7
-        new Random().nextBytes(array);
-        return new String(array, Charset.forName("UTF-8"));
+        return UUID.randomUUID().toString();
 
 	}
     

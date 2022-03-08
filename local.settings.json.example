@@ -11,6 +11,7 @@
       "DEBT_POSITIONS_TABLE":"debtpostable",
       "ORGANIZATIONS_CONFIG_TABLE":"organizationstable",
       "GPD_HOST":"http://localhost:8085",
-      "NCRON_SCHEDULE_BATCH":"*/45 * * * * *"
+      "NCRON_SCHEDULE_BATCH":"*/45 * * * * *",
+      "DEBUG_AZURITE": true
     }
   }

@@ -18,13 +18,9 @@ import com.opencsv.bean.CsvToBean;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
+import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
-
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure Blob trigger.
@@ -69,8 +65,10 @@ public class CuCsvParsing {
         		// convert `CsvToBean` object to list of payments
             	final List<PaymentNotice> payments = csvValidation.getPayments();
             	// save in Table
-    			csvService.saveDebtPosition(fileName, payments);
-    		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
+            	List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileName, payments);
+    			// push in queue
+    			csvService.pushDebtPosition(fileName, savedEntities);
+    		} catch (Exception e) {
     			logger.log(Level.SEVERE, () -> "[CuCsvParsingFunction Error] Generic Error " + e.getMessage() + " "
                         + e.getCause() + " - fileName " + fileName);
     		}
