@@ -7,6 +7,8 @@ import static org.mockito.Mockito.spy;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -122,6 +124,7 @@ class DebtPositionServiceIntegrationTest {
         CloudStorageAccount.parse(storageConnectionString)
             .createCloudTableClient()
             .getTableReference(debtPositionsTable);
+    table.createIfNotExists();
 
     List<String> pks = new ArrayList<>();
     pks.add("csv1");
@@ -133,10 +136,82 @@ class DebtPositionServiceIntegrationTest {
     assertTrue(data.get(0).size() == 0);
   }
 
-
   @Test
   void getDebtPositionListByPkTestOk()
-          throws URISyntaxException, InvalidKeyException, StorageException {
+      throws URISyntaxException, InvalidKeyException, StorageException {
+    debtPositionService =
+        spy(
+            new DebtPositionService(
+                storageConnectionString,
+                debtPositionsTable,
+                containerBlobIn,
+                containerBlobOut,
+                logger));
+
+    CloudTable table =
+        CloudStorageAccount.parse(storageConnectionString)
+            .createCloudTableClient()
+            .getTableReference(debtPositionsTable);
+//    table.createIfNotExists();
+
+    DebtPositionEntity debtPositionEntity;
+    for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < 5; i++) {
+        debtPositionEntity = new DebtPositionEntity("csv" + j, Integer.toString(i));
+        if (j==2 && i==2) {
+          debtPositionEntity.setStatus(Status.INSERTED.toString());
+        } else {
+          debtPositionEntity.setStatus(Status.CREATED.toString());
+        }
+        // CSV
+        debtPositionEntity.setPaIdIstat("paIdIstat");
+        debtPositionEntity.setPaIdCatasto("paIdCatasto");
+        debtPositionEntity.setPaIdFiscalCode("paIdFiscalCode");
+        debtPositionEntity.setPaIdCbill("paIdCbill");
+        debtPositionEntity.setPaPecEmail("paPecEmail");
+        debtPositionEntity.setPaReferentEmail("paReferentEmail");
+        debtPositionEntity.setPaReferentName("paReferentName");
+        debtPositionEntity.setDebtorIdFiscalCode("debtorIdFiscalCode");
+        debtPositionEntity.setPaymentNoticeNumber("paymentNoticeNumber");
+        debtPositionEntity.setNote("note");
+
+        debtPositionEntity.setDebtorName("debtorName");
+        debtPositionEntity.setDebtorEmail("debtorEmail");
+        debtPositionEntity.setAmount("amount"); // Long
+
+        // generated
+        debtPositionEntity.setIuv("iub");
+        debtPositionEntity.setIupd("iudp");
+
+        // EC config
+        debtPositionEntity.setFiscalCode("fiscalCode");
+        debtPositionEntity.setCompanyName("companyName");
+        debtPositionEntity.setIban("iban");
+
+        table.execute(TableOperation.insert(debtPositionEntity));
+      }
+    }
+
+    List<String> pks = new ArrayList<>();
+    pks.add("csv0"); // all CREATED
+    pks.add("csv1"); // all CREATED
+    pks.add("csv2"); // not all CREATED
+    pks.add("csv3"); // doesn't exists
+
+    List<List<List<String>>> data = debtPositionService.getDebtPositionListByPk(pks);
+    // Output expected NoSuchElementExceptions.
+
+    assertTrue(data.get(0).size() == 5);
+    assertTrue(data.get(1).size() == 5);
+
+    assertTrue(data.get(3).size() == 0);
+
+
+  }
+
+  @Test
+  void uploadOutFileTest() throws FileNotFoundException {
+
     debtPositionService =
             spy(
                     new DebtPositionService(
@@ -146,55 +221,50 @@ class DebtPositionServiceIntegrationTest {
                             containerBlobOut,
                             logger));
 
-    CloudTable table =
-            CloudStorageAccount.parse(storageConnectionString)
-                    .createCloudTableClient()
-                    .getTableReference(debtPositionsTable);
+    BlobServiceClient blobServiceClient =
+            new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
 
-        DebtPositionEntity debtPositionEntity;
-        for (int j= 0; j < 10; j++) {
-          for (int i = 0; i < 5; i++) {
-            debtPositionEntity = new DebtPositionEntity("csv" + j, Integer.toString(i));
-            debtPositionEntity.setStatus(Status.CREATED.toString());
-            // CSV
-            debtPositionEntity.setPaIdIstat("paIdIstat");
-            debtPositionEntity.setPaIdCatasto("paIdCatasto");
-            debtPositionEntity.setPaIdFiscalCode("paIdFiscalCode");
-            debtPositionEntity.setPaIdCbill("paIdCbill");
-            debtPositionEntity.setPaPecEmail("paPecEmail");
-            debtPositionEntity.setPaReferentEmail("paReferentEmail");
-            debtPositionEntity.setPaReferentName("paReferentName");
-            debtPositionEntity.setDebtorIdFiscalCode("debtorIdFiscalCode");
-            debtPositionEntity.setPaymentNoticeNumber("paymentNoticeNumber");
-            debtPositionEntity.setNote("note");
+    BlobContainerClient containerClientBlobIn = blobServiceClient.getBlobContainerClient(containerBlobIn);
+    if (!containerClientBlobIn.exists()) {
+       containerClientBlobIn = blobServiceClient.createBlobContainer(containerBlobIn);
+    }
 
-            debtPositionEntity.setDebtorName("debtorName");
-            debtPositionEntity.setDebtorEmail("debtorEmail");
-            debtPositionEntity.setAmount("amount"); // Long
 
-            // generated
-            debtPositionEntity.setIuv("iub");
-            debtPositionEntity.setIupd("iudp");
+    String initialString = "test-text";
+    InputStream targetStream;
+    BlobClient blobClient;
 
-            // EC config
-            debtPositionEntity.setFiscalCode("fiscalCode");
-            debtPositionEntity.setCompanyName("companyName");
-            debtPositionEntity.setIban("iban");
+    String csvFileName = "filename.csv";
 
-            table.execute(TableOperation.insert(debtPositionEntity));
-          }
-        }
+    blobClient = containerClientBlobIn.getBlobClient(csvFileName);
+    targetStream = new ByteArrayInputStream(initialString.getBytes());
+    blobClient.upload(BinaryData.fromStream(targetStream));
 
-    List<String> pks = new ArrayList<>();
-    pks.add("csv1");
-    pks.add("csv2");
+    BlobContainerClient containerClientBlobOut = blobServiceClient.createBlobContainer(containerBlobOut);
 
-    List<List<List<String>>> data = debtPositionService.getDebtPositionListByPk(pks);
-    // Output expected NoSuchElementExceptions.
+    List<List<String>> dataLines = new ArrayList<>();
+    List<String> row1 = new ArrayList<>();
+    row1.add("attr1");
+    row1.add("attr2");
+    row1.add("attr3");
+    List<String> row2 = new ArrayList<>();
+    row2.add("attr1");
+    row2.add("attr2");
+    row2.add("attr3");
+    dataLines.add(row1);
+    dataLines.add(row2);
 
-    assertTrue(data.get(0).size() == 0);
+    debtPositionService.uploadOutFile(csvFileName, dataLines);
+
+
+    List<String> fileNamesOut = containerClientBlobOut.listBlobs().stream().map(BlobItem::getName)
+            .collect(Collectors.toList());
+
+    List<String> fileNamesIn = containerClientBlobIn.listBlobs().stream().map(BlobItem::getName)
+            .collect(Collectors.toList());
+
+    assertTrue(fileNamesOut.contains(csvFileName));
+    assertTrue(!fileNamesIn.contains(csvFileName));
+
   }
-
-  @Test
-  void uploadOutFileTest() {}
 }
