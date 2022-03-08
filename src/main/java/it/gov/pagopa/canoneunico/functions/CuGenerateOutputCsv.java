@@ -13,14 +13,13 @@ import java.util.logging.Logger;
  */
 public class CuGenerateOutputCsv {
 
-    private String storageConnectionString = System.getenv("FLOW_SA_CONNECTION_STRING");
+    private final String storageConnectionString = System.getenv("FLOW_SA_CONNECTION_STRING");
 
     /**
      * This function will be invoked periodically according to the specified
      * schedule.
      */
     //  schedule = "*/5 * * * * *"
-
     @FunctionName("CuGenerateOutputCsvBatchFunction")
     public void run(
             @TimerTrigger(name = "CuGenerateOutputCsvBatchTrigger", schedule = "%NCRON_SCHEDULE_BATCH%") String timerInfo,

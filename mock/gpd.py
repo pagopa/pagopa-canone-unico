@@ -1,7 +1,6 @@
 import json
 import random
 import sys
-import time
 
 import tornado.ioloop
 import tornado.web
@@ -138,9 +137,22 @@ class PayPaymentOptionHandler(tornado.web.RequestHandler):
         self.write(json.dumps(generate_payment_option(iuv, idpa)))
 
 
+class DebtpositionsHandler(tornado.web.RequestHandler):
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')
+
+    def post(self, idpa):
+        print("request received")
+        print(f"{self.request}{self.request.body.decode()} - {idpa}")
+        self.set_status(201)
+        self.write(json.dumps({"iupd": "string"}))
+
+
 def make_app():
     return tornado.web.Application([
         (r"/organizations", organizationsHandler),
+        (r"/organizations/([^/]+)/debtpositions", DebtpositionsHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)/pay", PayPaymentOptionHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)/transfers/([^/]+)/report", reportsHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)", PaymentOptionHandler),
