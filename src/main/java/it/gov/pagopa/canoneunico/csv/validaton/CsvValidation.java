@@ -1,5 +1,6 @@
 package it.gov.pagopa.canoneunico.csv.validaton;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.opencsv.bean.CsvToBean;
@@ -13,16 +14,18 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class CsvValidation {
 
-    public static DebtPositionValidationCsvError checkCsvIsValid(String fileName, CsvToBean<?> csvToBean, List<PaymentNotice> payments){
+    public static DebtPositionValidationCsvError checkCsvIsValid(String fileName, CsvToBean<PaymentNotice> csvToBean){
     	DebtPositionValidationCsvError debtPosValidationErr = new DebtPositionValidationCsvError();
     	debtPosValidationErr.setCsvFilename(fileName);
-    	debtPosValidationErr.setTotalNumberRows(payments.size());
-        checkRequired(debtPosValidationErr, csvToBean);
+    	CsvValidation.checkConstraintErrors(debtPosValidationErr, csvToBean);
         return debtPosValidationErr;
     }
     
-    private static void checkRequired(DebtPositionValidationCsvError debtPosValidationErr, CsvToBean<?> csvToBean) {
-    	List<CsvException> parsingExceptions = csvToBean.getCapturedExceptions();
+    private static void checkConstraintErrors (DebtPositionValidationCsvError debtPosValidationErr, CsvToBean<PaymentNotice> csvToBean) {
+    	final List<PaymentNotice> payments = csvToBean!=null ? csvToBean.parse() : new ArrayList<>();
+    	List<CsvException> parsingExceptions = csvToBean!=null ? csvToBean.getCapturedExceptions(): new ArrayList<>();
+    	debtPosValidationErr.setTotalNumberRows(payments.size()+parsingExceptions.size());
+    	debtPosValidationErr.setNumberInvalidRows(parsingExceptions.size());
     	if (!parsingExceptions.isEmpty()) {
     		for (CsvException ex: parsingExceptions) {
 
@@ -35,13 +38,11 @@ public class CsvValidation {
     				errorRow = new DebtPositionErrorRow();
     				errorRow.setRowNumber(ex.getLineNumber());
     				errorRow.getErrorsDetail().add(ex.getMessage());
-    			}
-    			
-    			debtPosValidationErr.getErrorRows().add(errorRow);
+    				debtPosValidationErr.getErrorRows().add(errorRow);
+    			}	
     		}
     	}
 
-    }
-    
+    } 
     
 }
