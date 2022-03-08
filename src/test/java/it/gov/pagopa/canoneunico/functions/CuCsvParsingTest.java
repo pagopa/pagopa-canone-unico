@@ -28,8 +28,8 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
-import it.gov.pagopa.canoneunico.csv.model.service.CuCsvService;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
+import it.gov.pagopa.canoneunico.service.CuCsvService;
 
 @ExtendWith(MockitoExtension.class)
 class CuCsvParsingTest {
@@ -68,7 +68,7 @@ class CuCsvParsingTest {
     	 
     	// precondition
         when(context.getLogger()).thenReturn(logger);
-        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(null, logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
     	    
         byte[] file = data.getBytes();
 
@@ -101,7 +101,7 @@ class CuCsvParsingTest {
     	 
     	// precondition
         when(context.getLogger()).thenReturn(logger);
-        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(null, logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
     	
         
@@ -111,8 +111,8 @@ class CuCsvParsingTest {
         
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).parseCsv(data);
-        verify(cuCsvService, times(1)).uploadCsv(null,"2021-04-21_pagcorp0007_0101108TS2_KO.csv",null);
-        verify(cuCsvService, times(1)).deleteCsv(null,"2021-04-21_pagcorp0007_0101108TS2_KO.csv");
+        verify(cuCsvService, times(1)).uploadCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv",null);
+        verify(cuCsvService, times(1)).deleteCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv");
 
     }
 }
