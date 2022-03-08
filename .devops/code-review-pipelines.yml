@@ -37,6 +37,7 @@ steps:
         sonar.coverage.exclusions=**/config/*,**/*Mock*,**/model/**,**/entity/*,**/util/**
         sonar.cpd.exclusions=**/model/**,**/entity/*,**/util/**
 
+
   - task: Maven@3
     displayName: 'Run Junit Test'
     inputs:
@@ -54,20 +55,6 @@ steps:
       sonarQubeRunAnalysis: true
       isJacocoCoverageReportXML: true
       sqMavenPluginVersionChoice: 'latest'
-
-
-  - task: Maven@3
-    displayName: 'Run Junit Test'
-    inputs:
-      mavenPomFile: 'pom.xml'
-      mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '11'
-      jdkArchitectureOption: 'x64'
-      publishJUnitResults: false
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      goals: 'clean verify'
-      sonarQubeRunAnalysis: true
 
   - task: SonarCloudPublish@1
     displayName: 'Publish SonarCloud results on build summary'
