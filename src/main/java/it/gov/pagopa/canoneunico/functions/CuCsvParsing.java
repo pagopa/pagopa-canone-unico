@@ -1,8 +1,6 @@
 package it.gov.pagopa.canoneunico.functions;
 
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +11,6 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.BlobTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.storage.StorageException;
 import com.opencsv.bean.CsvToBean;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;

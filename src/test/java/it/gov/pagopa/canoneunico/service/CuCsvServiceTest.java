@@ -33,10 +33,10 @@ import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.CloudTableClient;
 import com.microsoft.azure.storage.table.TableRequestOptions;
 import com.opencsv.bean.CsvToBean;
-import it.gov.pagopa.canoneunico.entity.Status;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.Status;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 

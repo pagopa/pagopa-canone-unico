@@ -43,7 +43,6 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
-import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
@@ -134,7 +133,7 @@ public class CuCsvService {
     			this.addDebtPositionEntityList(partitionDebtPositionEntities.get(partitionAddIndex));
     			logger.log(Level.INFO, () -> "[CuCsvService] Azure Table Storage - Add for partition index " + partitionAddIndex + " executed."); 
     			savedDebtPositionEntities.addAll(partitionDebtPositionEntities.get(partitionAddIndex));
-    		} catch (InvalidKeyException | CanoneUnicoException | URISyntaxException | StorageException e) {
+    		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
     			logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Table Storage batch debt position entities: " + e.getMessage() + " " + e.getCause());
     		}
     	});    	 
@@ -183,7 +182,7 @@ public class CuCsvService {
     	queue.addMessage(new CloudQueueMessage(ObjectMapperUtils.writeValueAsString(msg)));
     }
     
-    public void addDebtPositionEntityList (List<DebtPositionEntity> debtPositionEntities) throws CanoneUnicoException, InvalidKeyException, URISyntaxException, StorageException  {
+    public void addDebtPositionEntityList (List<DebtPositionEntity> debtPositionEntities) throws InvalidKeyException, URISyntaxException, StorageException  {
     	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
     	azuriteStorageUtil.createTable(debtPositionTable);
 

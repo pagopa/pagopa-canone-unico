@@ -13,14 +13,12 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,10 +30,7 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
-import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
-import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
-import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,9 +44,6 @@ class CuCsvParsingTest {
 
     @Mock
     CuCsvService cuCsvService;
-    
-    @Spy
-    CuCsvService cuCsvServiceSpy;
     
     
 
