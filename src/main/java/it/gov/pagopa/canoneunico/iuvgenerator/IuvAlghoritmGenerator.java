@@ -29,5 +29,14 @@ public interface IuvAlghoritmGenerator {
      *            the segregation code
      * @return the IUV Code
      */
-    String generate(Integer segregationCode, String nextValSequence);
+    String generate(Integer segregationCode, Integer nextValSequence);
+    
+    /**
+     * Generates the IUV Code
+     * 
+     * @param segregationCode
+     *            the segregation code
+     * @return the IUV Code
+     */
+    String generate(Integer segregationCode);
 }

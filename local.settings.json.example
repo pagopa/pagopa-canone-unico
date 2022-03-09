@@ -9,9 +9,12 @@
       "ERROR_CSV_BLOB":"error",
       "DEBT_POSITIONS_QUEUE":"debtposqueue",
       "DEBT_POSITIONS_TABLE":"debtpostable",
+      "IUV_TABLE":"iuvtable",
       "ORGANIZATIONS_CONFIG_TABLE":"organizationstable",
       "GPD_HOST":"http://localhost:8085",
       "NCRON_SCHEDULE_BATCH":"*/45 * * * * *",
+      "CU_SEGREGATION_CODE":"47",
+      "CU_AUX_DIGIT":3,
       "DEBUG_AZURITE": true
     }
   }

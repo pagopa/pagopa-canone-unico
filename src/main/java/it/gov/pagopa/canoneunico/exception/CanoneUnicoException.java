@@ -1,6 +1,6 @@
 package it.gov.pagopa.canoneunico.exception;
 
-public class CanoneUnicoException extends Exception {
+public class CanoneUnicoException extends RuntimeException {
 
 	/**
 	 * generated serialVersionUID

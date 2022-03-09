@@ -22,9 +22,17 @@ public class IuvAlghoritmAuxDigit3 extends IuvAlghoritm {
      * 13n)&gt;&lt;IUV check digit (2n)&gt;
      */
     @Override
-    public String generate(Integer segregationCode, String nextValSequence) {
+    public String generate(Integer segregationCode, Integer nextValSequence) {
         String segregationCodeString = new DecimalFormat("00").format(segregationCode);
-        String iuvBase13Digits = generateIuBase13Digits(nextValSequence);
+        String iuvBase13Digits = generateSeqIuv13Digits(nextValSequence);
+        String checkDigit = generateCheckDigit(String.valueOf(auxDigit) + segregationCodeString + iuvBase13Digits);
+        return segregationCodeString + iuvBase13Digits + checkDigit;
+    }
+    
+    @Override
+    public String generate(Integer segregationCode) {
+        String segregationCodeString = new DecimalFormat("00").format(segregationCode);
+        String iuvBase13Digits = generateRandomIuv13Digits();
         String checkDigit = generateCheckDigit(String.valueOf(auxDigit) + segregationCodeString + iuvBase13Digits);
         return segregationCodeString + iuvBase13Digits + checkDigit;
     }

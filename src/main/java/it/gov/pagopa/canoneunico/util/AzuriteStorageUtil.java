@@ -5,8 +5,10 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.microsoft.azure.storage.CloudStorageAccount;
+import com.microsoft.azure.storage.OperationContext;
 import com.microsoft.azure.storage.RetryNoRetry;
 import com.microsoft.azure.storage.StorageException;
+import com.microsoft.azure.storage.core.Logger;
 import com.microsoft.azure.storage.queue.CloudQueue;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.CloudTableClient;
@@ -34,8 +36,11 @@ public class AzuriteStorageUtil {
             tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
             cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
             CloudTable table = cloudTableClient.getTableReference(tableName);
-
-            table.createIfNotExists();
+            try {
+            	table.create();
+            } catch (Exception e) {
+            	Logger.info(new OperationContext(), "Table already exist:" + tableName);
+            }
         }
     }
 

@@ -1,7 +1,10 @@
 package it.gov.pagopa.canoneunico.iuvgenerator;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -33,20 +36,43 @@ public abstract class IuvAlghoritm implements IuvAlghoritmGenerator {
     }
 
     /**
-     * Generates the IUV base 13 digits
+     * Generates sequential 13 digits IUV
      * 
      * @return the IUV base
      */
-    protected String generateIuBase13Digits(String nextValSequence) {
-	String sequence=nextValSequence;
-	
-	sequence = StringUtils.leftPad(sequence, 9, '0');
-        sequence = Calendar.getInstance().get(Calendar.YEAR) + sequence;
+    protected String generateSeqIuv13Digits(int nextValSequence) {
 
-        if (!pattern.matcher(sequence).matches()) {
-            throw new UnexpectedValueException(UNEXPECTED_GENERATED_VALUE_ERROR + sequence);
-        }
-        
-        return sequence;
+    	long timeStampMillis = Instant.now().toEpochMilli() + nextValSequence;	
+
+    	String sequence=Long.toString(timeStampMillis);
+
+
+    	if (!pattern.matcher(sequence).matches()) {
+    		throw new UnexpectedValueException(UNEXPECTED_GENERATED_VALUE_ERROR + sequence);
+    	}
+
+    	return sequence;
+    }
+    
+    /**
+     * Generates random 13 digits IUV
+     * 
+     * @return the IUV base
+     */
+    protected String generateRandomIuv13Digits() {
+
+    	long timeStampMillis = Instant.now().toEpochMilli();	
+    	long moduleDigitis = timeStampMillis % 999999999;
+
+    	SecureRandom sr = new SecureRandom();
+    	Integer randomInt = sr.nextInt(10000);
+
+    	String sequence = String.format("%09d", moduleDigitis) + String.format("%04d", randomInt);
+
+    	if (!pattern.matcher(sequence).matches()) {
+    		throw new UnexpectedValueException(UNEXPECTED_GENERATED_VALUE_ERROR + sequence);
+    	}
+
+    	return sequence;
     }
 }

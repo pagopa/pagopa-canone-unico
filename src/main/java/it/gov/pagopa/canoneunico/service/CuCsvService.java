@@ -10,7 +10,6 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +41,10 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.IuvEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
+import it.gov.pagopa.canoneunico.iuvgenerator.IuvCodeBusiness;
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
@@ -55,12 +57,15 @@ import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 public class CuCsvService {
 	
 	private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
-    private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
-	private String debtPositionTable = System.getenv("DEBT_POSITIONS_TABLE");
-	private String debtPositionQueue = System.getenv("DEBT_POSITIONS_QUEUE");
-	private int batchSizeDebtPosQueue = 5;
-	private int batchSizeDebtPosTable = 5;
+    private String containerInputBlob      = System.getenv("INPUT_CSV_BLOB");
+    private String containerErrorBlob      = System.getenv("ERROR_CSV_BLOB");
+	private String debtPositionTable       = System.getenv("DEBT_POSITIONS_TABLE");
+	private String iuvTable                = System.getenv("IUV_TABLE");
+	private String debtPositionQueue       = System.getenv("DEBT_POSITIONS_QUEUE");
+	private Integer segregationCode        = Integer.valueOf(System.getenv("CU_SEGREGATION_CODE"));
+	private Integer auxDigiti              = Integer.valueOf(System.getenv("CU_AUX_DIGIT"));
+	private int batchSizeDebtPosQueue      = 5;
+	private int batchSizeDebtPosTable      = 5;
 	
     private Logger logger;
     
@@ -199,6 +204,23 @@ public class CuCsvService {
 
     	table.execute(batchOperation);
     }
+
+    public void checkIUVExistence (IuvEntity iuvEntity) throws InvalidKeyException, URISyntaxException, StorageException  {
+    	logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table ["+iuvTable+"]: " + iuvEntity);
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createTable(iuvTable);
+
+    	CloudTable table = CloudStorageAccount.parse(storageConnectionString)
+    			.createCloudTableClient()
+    			.getTableReference(iuvTable);
+
+    	TableBatchOperation batchOperation = new TableBatchOperation();
+
+    	batchOperation.insert(iuvEntity);
+
+    	table.execute(batchOperation);
+    }
+    
     
     public String generateErrorCsv (String converted, DebtPositionValidationCsv csvValidationErrors)  {
     	
@@ -257,13 +279,45 @@ public class CuCsvService {
 	    return csv.toString();
     }
     
+	public String getValidIUV(String paIdFiscalCode, int segregationCode) {
+		final int MAX_RETRY_COUNT = 7;
+		int retryCount = 1;
+		String iuv = this.generateIUV(segregationCode);
+		IuvEntity iuvEntity = new IuvEntity(paIdFiscalCode, iuv);
+		while (true) {
+			try {
+				this.checkIUVExistence(iuvEntity);
+				break;
+			} catch (InvalidKeyException | URISyntaxException | StorageException e) {
+				if (retryCount > MAX_RETRY_COUNT) {
+					throw new CanoneUnicoException(
+							"[CuCsvService] Azure Table Storage - table [" + iuvTable + "]: Unable to get a unique IUV in "+ MAX_RETRY_COUNT +" retry",
+							e);
+				}
+				logger.log(Level.WARNING, String.format(
+						"[CuCsvService] Azure Table Storage - Not unique IUV [%s] in table [%s]: a new one will be generated [retry = %s].",
+						iuv, iuvTable, retryCount));
+				retryCount++;
+			}
+		}
+		return iuv;
+	}
+    
+    public String generateIUV(int segregationCode) {
+		return IuvCodeBusiness.generateIUV(segregationCode);
+	}
+    
+    public String generateIncrementalIUV(int segregationCode, int nextVal) {
+    	return IuvCodeBusiness.generateIUV(segregationCode, nextVal);
+    }
+    
     
     private List<DebtPositionEntity> getDebtPositionEntities (String fileName, List<PaymentNotice> payments) {
     	List<DebtPositionEntity> debtPositionEntities = new ArrayList<>(); 
     	for (PaymentNotice p: payments) {
     		DebtPositionEntity e = new DebtPositionEntity(fileName, p.getId());
-    		String iuv = this.generateIUV("cu", 47, 3);
-    		e.setIuv(this.generateIUV("cu", 47, 3));
+    		String iuv = this.getValidIUV(p.getPaIdFiscalCode(), segregationCode);
+    		e.setIuv(iuv);
     		e.setIupd(this.generateIUPD(iuv));
     		e.setPaIdIstat(p.getPaIdIstat());
     		e.setPaIdCatasto(p.getPaIdCatasto());
@@ -309,35 +363,6 @@ public class CuCsvService {
     	}
 		return debtPositionMsgs;
     }
-
-    private String generateIUV(String idDominioPa, int segregationCode, int auxDigit) {
-    	/*
-    	String zone = "Europe/Paris";
-		Long lastNumber = 1l;
-		IuvNumber incrementalIuvNumber = null;
-		//IuvNumber incrementalIuvNumber = incrementalIuvNumberRepository.findByIdDominioPaAndAnno(idDominioPa,
-			//	LocalDateTime.now(ZoneId.of(this.zone)).getYear());
-		if (incrementalIuvNumber != null) {
-			lastNumber = (incrementalIuvNumber.getLastUsedNumber() + 1);
-			incrementalIuvNumber.setLastUsedNumber(lastNumber);
-
-		} else {
-
-			incrementalIuvNumber = new IuvNumber();
-			incrementalIuvNumber.setAnno(LocalDateTime.now(ZoneId.of(zone)).getYear());
-			incrementalIuvNumber.setIdDominioPa(idDominioPa);
-			incrementalIuvNumber.setLastUsedNumber(lastNumber);
-		}
-		//incrementalIuvNumberRepository.saveAndFlush(incrementalIuvNumber);
-
-		IuvCodeGenerator iuvCodeGenerator = new IuvCodeGenerator.Builder().setAuxDigit(auxDigit)
-				.setSegregationCode(segregationCode).build();
-
-		IuvCodeBusiness.validate(iuvCodeGenerator);
-		return auxDigit + IuvCodeBusiness.generateIUV(segregationCode, lastNumber + "");*/
-        return UUID.randomUUID().toString();
-
-	}
     
     private String generateIUPD (String iuv) {
     	return "CU_2022_"+iuv;
