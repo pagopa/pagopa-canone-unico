@@ -23,7 +23,7 @@ variables:
   ${{ if eq(parameters['ENV'], 'dev') }}:
     AZURE_SUBSCRIPTION: $(DEV_AZURE_SUBSCRIPTION)
     RESOURCE_GROUP: "pagopa-d-canoneunico-rg"
-    APP_NAME: "pagopa-d-fn-canoneunico"
+    APP_NAME: "pagopa-d-canoneunico-fn"
     STAGE: "d"
     dockerRegistryServiceConnection: $(DEV_CONTAINER_REGISTRY)
     dockerNamespace: $(DEV_CONTAINER_NAMESPACE)
