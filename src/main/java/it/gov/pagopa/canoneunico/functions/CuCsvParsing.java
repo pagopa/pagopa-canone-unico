@@ -42,7 +42,11 @@ public class CuCsvParsing {
     		@BindingName("name") String fileName, final ExecutionContext context) {
 
     	Logger logger = context.getLogger();
-    	logger.log(Level.INFO, () -> "[CuCsvParsingFunction START] executed at: " + LocalDateTime.now() + " - fileName " + fileName);
+    	
+    	logger.log(Level.INFO, () ->
+    			String.format(
+				"[CuCsvParsingFunction START] executed at: [%s] - fileName [%s]",
+				LocalDateTime.now(), fileName));
 
     	CuCsvService csvService = this.getCuCsvServiceInstance(logger);
 
@@ -66,8 +70,9 @@ public class CuCsvParsing {
     			// push in queue
     			csvService.pushDebtPosition(fileName, savedEntities);
     		} catch (Exception e) {
-    			logger.log(Level.SEVERE, () -> "[CuCsvParsingFunction Error] Generic Error " + e.getMessage() + " "
-                        + e.getCause() + " - fileName " + fileName);
+    			logger.log(Level.SEVERE, () -> String.format(
+						"[CuCsvParsingFunction Error] Generic Error %s - %s - fileName %s",
+						e.getMessage(), e.getCause(), fileName));
     		}
     	}
     	else {
@@ -76,9 +81,9 @@ public class CuCsvParsing {
 					fileName,
 					csvValidation.getNumberInvalidRows()+"/"+csvValidation.getTotalNumberRows());
 			List<String> details = new ArrayList<>();
-			csvValidation.getErrorRows().stream().forEach(exception -> {
-				details.add(String.format(LOG_VALIDATION_ERROR_DETAIL, exception.getRowNumber()-1, exception.getErrorsDetail()));
-			});
+			csvValidation.getErrorRows().stream().forEach(exception -> 
+				details.add(String.format(LOG_VALIDATION_ERROR_DETAIL, exception.getRowNumber()-1, exception.getErrorsDetail()))
+			);
 			logger.log(Level.SEVERE, () -> header + System.lineSeparator() + details);
 
 			String errorCSV = csvService.generateErrorCsv(converted, csvValidation);

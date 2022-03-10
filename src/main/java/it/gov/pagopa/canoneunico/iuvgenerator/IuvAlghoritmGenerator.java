@@ -1,7 +1,5 @@
 package it.gov.pagopa.canoneunico.iuvgenerator;
 
-import it.gov.pagopa.canoneunico.iuvgenerator.exception.ValidationException;
-
 /**
  * IUV code generator with IUV alghoritm interface
  */
@@ -17,7 +15,7 @@ public interface IuvAlghoritmGenerator {
          * 
          * @return a new instance of <code>IuvAlghoritmGenerator</code>
          */
-        public IuvAlghoritmGenerator build() throws ValidationException {
+        public IuvAlghoritmGenerator build() {
             return new IuvAlghoritmAuxDigit3();
         }
     }

@@ -3,11 +3,7 @@ package it.gov.pagopa.canoneunico.iuvgenerator;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Random;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
 
 import it.gov.pagopa.canoneunico.iuvgenerator.exception.UnexpectedValueException;
 
