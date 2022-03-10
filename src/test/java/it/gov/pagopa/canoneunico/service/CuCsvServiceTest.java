@@ -130,20 +130,29 @@ class CuCsvServiceTest {
     void saveDebtPosition() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
         
         CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
         CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
         TableRequestOptions tableRequestOptions = new TableRequestOptions();
         tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
         cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
-        CloudTable table = cloudTableClient.getTableReference("debtPositionT");
-        table.createIfNotExists();
+        
+        try {
+        	CloudTable table = cloudTableClient.getTableReference("debtPositionT");
+            table.createIfNotExists();
+            table = cloudTableClient.getTableReference("iuv");
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        }
+        
         
         List<PaymentNotice> payments = new ArrayList<>();
         PaymentNotice p = new PaymentNotice();
         p.setId("1");
         p.setAmount(0);
+        p.setPaIdFiscalCode("paFiscalCode");
         payments.add(p);
         List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition("fileName", payments);
         assertNotNull(savedEntities);
@@ -254,7 +263,35 @@ class CuCsvServiceTest {
         
     }
     
+    @Test
+    void getValidIUV() throws InvalidKeyException, URISyntaxException, StorageException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("iuv");
+        table.createIfNotExists();
+        
+        String iuv = csvService.getValidIUV("fiscal-code", 47);
+        assertNotNull(iuv); 
+        assertEquals(17, iuv.getBytes().length);
+        
+    }
     
+    @Test
+    void generateIncrementalIUV() throws InvalidKeyException, URISyntaxException, StorageException {
+        Logger logger = Logger.getLogger("testlogging");
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));        
+        String iuv = csvService.generateIncrementalIUV(47,1);
+        assertNotNull(iuv); 
+        assertEquals(17, iuv.getBytes().length);
+        
+    }
     
     
     @Test

@@ -15,6 +15,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -62,8 +64,7 @@ public class CuCsvService {
 	private String debtPositionTable       = System.getenv("DEBT_POSITIONS_TABLE");
 	private String iuvTable                = System.getenv("IUV_TABLE");
 	private String debtPositionQueue       = System.getenv("DEBT_POSITIONS_QUEUE");
-	private Integer segregationCode        = Integer.valueOf(System.getenv("CU_SEGREGATION_CODE"));
-	private Integer auxDigiti              = Integer.valueOf(System.getenv("CU_AUX_DIGIT"));
+	private Integer segregationCode        = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
 	private int batchSizeDebtPosQueue      = 5;
 	private int batchSizeDebtPosTable      = 5;
 	
@@ -74,12 +75,21 @@ public class CuCsvService {
         this.logger = logger;
     }
     
-    public CuCsvService(String storageConnectionString, String containerInputBlob, String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
+    public CuCsvService(String storageConnectionString, String containerInputBlob, 
+    		String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
     	this.storageConnectionString = storageConnectionString;
     	this.containerInputBlob = containerInputBlob;
     	this.containerErrorBlob = containerErrorBlob;
     	this.debtPositionTable = debtPositionTable;
-    	this.debtPositionQueue = debtPositionQueue;		
+    	this.debtPositionQueue = debtPositionQueue;
+        this.logger = logger;
+    }
+    
+    public CuCsvService(String storageConnectionString, String debtPositionTable, String iuvTable, String segregationCode, Logger logger) {
+    	this.storageConnectionString = storageConnectionString;
+    	this.debtPositionTable = debtPositionTable;
+    	this.iuvTable = iuvTable;
+    	this.segregationCode = NumberUtils.toInt(segregationCode);
         this.logger = logger;
     }
     
