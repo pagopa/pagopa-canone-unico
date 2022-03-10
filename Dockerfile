@@ -3,7 +3,7 @@ ARG JAVA_VERSION=11
 #FROM mcr.microsoft.com/azure-functions/java:3.0-java$JAVA_VERSION-core-tools AS installer-env
 FROM mcr.microsoft.com/azure-functions/java:3.0-java$JAVA_VERSION-build AS installer-env
 
-COPY canone-unico /src/java-function-app
+COPY . /src/java-function-app
 RUN cd /src/java-function-app && \
     mkdir -p /home/site/wwwroot && \
     mvn clean package && \
