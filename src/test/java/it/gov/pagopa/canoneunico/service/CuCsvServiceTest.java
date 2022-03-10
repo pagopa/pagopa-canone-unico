@@ -8,6 +8,7 @@ import static org.mockito.Mockito.spy;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.ClassRule;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -38,7 +40,9 @@ import com.opencsv.bean.CsvToBean;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
@@ -64,6 +68,28 @@ class CuCsvServiceTest {
     	          azurite.getContainerIpAddress(),
     	          azurite.getMappedPort(10000));
 
+    @Test
+    void initEcConfigList() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "ecconfig", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        
+        try {
+        	CloudTable table = cloudTableClient.getTableReference("ecconfig");
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        }
+        
+        Assertions.assertThrows(CanoneUnicoException.class, () -> {csvService.initEcConfigList();});  
+    }
+    
 
     @Test
     void parseCsv() {
@@ -127,7 +153,7 @@ class CuCsvServiceTest {
     }
     
     @Test
-    void saveDebtPosition() throws InvalidKeyException, URISyntaxException, StorageException {
+    void saveDebtPosition() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         Logger logger = Logger.getLogger("testlogging");
 
         var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
@@ -147,6 +173,18 @@ class CuCsvServiceTest {
         	logger.info("Table already exist");
         }
         
+        //precondition
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
+        Field list = csvService.getClass().getDeclaredField("organizationsList");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,organizationsList);
+       
         
         List<PaymentNotice> payments = new ArrayList<>();
         PaymentNotice p = new PaymentNotice();
@@ -179,7 +217,7 @@ class CuCsvServiceTest {
         e.setAmount("0");
         e.setIuv("iuv");
         e.setIupd("iupd");
-        e.setFiscalCode("fiscalcode");
+        e.setDebtorIdFiscalCode("fiscalcode");
         e.setCompanyName("companyname");
         e.setIban("iban");
         e.setStatus(Status.INSERTED.toString());
@@ -218,7 +256,7 @@ class CuCsvServiceTest {
         e.setAmount("0");
         e.setIuv("iuv");
         e.setIupd("iupd");
-        e.setFiscalCode("fiscalcode");
+        e.setDebtorIdFiscalCode("fiscalcode");
         e.setCompanyName("companyname");
         e.setIban("iban");
         e.setStatus(Status.INSERTED.toString());
@@ -264,7 +302,7 @@ class CuCsvServiceTest {
     }
     
     @Test
-    void getValidIUV() throws InvalidKeyException, URISyntaxException, StorageException {
+    void getValidIUV() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
         Logger logger = Logger.getLogger("testlogging");
 
         var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));

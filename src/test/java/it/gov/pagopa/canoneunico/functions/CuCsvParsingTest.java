@@ -13,6 +13,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -31,6 +32,8 @@ import com.opencsv.enums.CSVReaderNullFieldIndicator;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
+import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,7 +64,7 @@ class CuCsvParsingTest {
     }
 
     @Test
-    void checkParseFileOKTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException {
+    void checkParseFileOKTest() throws IOException, InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
     	
     	ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
@@ -80,7 +83,7 @@ class CuCsvParsingTest {
     			.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
     			.withOrderedResults(true)
     			.withMappingStrategy(mappingStrategy)
-    			.withVerifier(new PaymentNoticeVerifier())
+    			.withVerifier(new PaymentNoticeVerifier(new ArrayList<EcConfigEntity>()))
     			.withType(PaymentNotice.class)
     			.withIgnoreLeadingWhiteSpace(true)
     			.withThrowExceptions(false)
@@ -92,7 +95,7 @@ class CuCsvParsingTest {
     			.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
     			.withOrderedResults(true)
     			.withMappingStrategy(mappingStrategy)
-    			.withVerifier(new PaymentNoticeVerifier())
+    			.withVerifier(new PaymentNoticeVerifier(new ArrayList<EcConfigEntity>()))
     			.withType(PaymentNotice.class)
     			.withIgnoreLeadingWhiteSpace(true)
     			.withThrowExceptions(false)
@@ -126,7 +129,7 @@ class CuCsvParsingTest {
 		.withSeparator(';')
 		.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
 		.withOrderedResults(true)
-		.withVerifier(new PaymentNoticeVerifier())
+		.withVerifier(new PaymentNoticeVerifier(new ArrayList<EcConfigEntity>()))
 		.withType(PaymentNotice.class)
 		.withIgnoreLeadingWhiteSpace(true)
 		.withThrowExceptions(false)

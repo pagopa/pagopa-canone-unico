@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,6 +30,7 @@ import com.microsoft.azure.storage.queue.CloudQueue;
 import com.microsoft.azure.storage.queue.CloudQueueMessage;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.TableBatchOperation;
+import com.microsoft.azure.storage.table.TableQuery;
 import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
@@ -43,6 +45,7 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
 import it.gov.pagopa.canoneunico.entity.IuvEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
 import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
@@ -53,18 +56,21 @@ import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
+import lombok.NoArgsConstructor;
 
 
-
+@NoArgsConstructor
 public class CuCsvService {
 	
-	private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private String containerInputBlob      = System.getenv("INPUT_CSV_BLOB");
-    private String containerErrorBlob      = System.getenv("ERROR_CSV_BLOB");
-	private String debtPositionTable       = System.getenv("DEBT_POSITIONS_TABLE");
-	private String iuvTable                = System.getenv("IUV_TABLE");
-	private String debtPositionQueue       = System.getenv("DEBT_POSITIONS_QUEUE");
-	private Integer segregationCode        = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
+	private String storageConnectionString         = System.getenv("CU_SA_CONNECTION_STRING");
+    private String containerInputBlob              = System.getenv("INPUT_CSV_BLOB");
+    private String containerErrorBlob              = System.getenv("ERROR_CSV_BLOB");
+	private String debtPositionTable               = System.getenv("DEBT_POSITIONS_TABLE");
+	private String iuvTable                        = System.getenv("IUV_TABLE");
+	private String ecConfigTable                   = System.getenv("EC_CONFIG_TABLE");
+	private String debtPositionQueue               = System.getenv("DEBT_POSITIONS_QUEUE");
+	private Integer segregationCode        	       = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
+	private List<EcConfigEntity> organizationsList = new ArrayList<>(); 
 	private int batchSizeDebtPosQueue      = 5;
 	private int batchSizeDebtPosTable      = 5;
 	
@@ -93,6 +99,35 @@ public class CuCsvService {
         this.logger = logger;
     }
     
+    public CuCsvService(String storageConnectionString, String ecConfigTable, Logger logger) {
+    	this.storageConnectionString = storageConnectionString;
+    	this.ecConfigTable = ecConfigTable;
+        this.logger = logger;
+    }
+    
+    public void initEcConfigList() throws URISyntaxException, InvalidKeyException, StorageException, CanoneUnicoException {
+    	
+    	final String ecConfigTablePartitionKey = "org"; 
+    	
+    	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
+    	azuriteStorageUtil.createTable(ecConfigTable);
+    	
+        CloudTable table = CloudStorageAccount.parse(storageConnectionString)
+                .createCloudTableClient()
+                .getTableReference(ecConfigTable);
+
+        // Iterate through the results and add to list
+        for (EcConfigEntity entity : table.execute(TableQuery.from(EcConfigEntity.class).where((TableQuery.generateFilterCondition("PartitionKey", TableQuery.QueryComparisons.EQUAL, ecConfigTablePartitionKey))))) {
+            organizationsList.add(entity);
+        }
+        
+        if (organizationsList.isEmpty()) {
+        	throw new CanoneUnicoException(
+					"[CuCsvService] Init Ec Config Error: unable to retrieve the ecConfig entities for the PartitionKey: " + ecConfigTablePartitionKey);
+        }
+
+    }
+    
     public CsvToBean<PaymentNotice> parseCsv(String content) {
 
     	Reader reader = new StringReader(content);
@@ -106,7 +141,7 @@ public class CuCsvService {
     			.withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
     			.withOrderedResults(true)
     			.withMappingStrategy(mappingStrategy)
-    			.withVerifier(new PaymentNoticeVerifier())
+    			.withVerifier(new PaymentNoticeVerifier(organizationsList))
     			.withType(PaymentNotice.class)
     			.withIgnoreLeadingWhiteSpace(true)
     			.withThrowExceptions(false)
@@ -133,7 +168,7 @@ public class CuCsvService {
 		cont.getBlobClient(fileName).delete();
     }
     
-    public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) {
+    public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
 
     	this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
     	
@@ -289,7 +324,7 @@ public class CuCsvService {
 	    return csv.toString();
     }
     
-	public String getValidIUV(String paIdFiscalCode, int segregationCode) {
+	public String getValidIUV(String paIdFiscalCode, int segregationCode) throws CanoneUnicoException {
 		final int MAX_RETRY_COUNT = 7;
 		int retryCount = 1;
 		String iuv = this.generateIUV(segregationCode);
@@ -322,7 +357,7 @@ public class CuCsvService {
     }
     
     
-    private List<DebtPositionEntity> getDebtPositionEntities (String fileName, List<PaymentNotice> payments) {
+    private List<DebtPositionEntity> getDebtPositionEntities (String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
     	List<DebtPositionEntity> debtPositionEntities = new ArrayList<>(); 
     	for (PaymentNotice p: payments) {
     		DebtPositionEntity e = new DebtPositionEntity(fileName, p.getId());
@@ -342,19 +377,43 @@ public class CuCsvService {
     		e.setDebtorName(p.getDebtorName());
     		e.setDebtorEmail(p.getDebtorEmail());
     		e.setAmount(String.valueOf(p.getAmount()));
-    		
-    		// from ec_config
-    		e.setFiscalCode("fiscalCode");
-    		e.setCompanyName("company name");
-    		e.setIban("iban");
-    		
     		e.setStatus(Status.INSERTED.toString());
+    		
+    		// enrich with info from ec_config
+    		this.enrichDebtPositionEntity(e);
     		
     		debtPositionEntities.add(e);
     		
     	}
 		return debtPositionEntities;
     }
+    
+	private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
+		if (null == e.getPaIdFiscalCode() || e.getPaIdFiscalCode().isBlank()) {
+			// get extra info by paIdCatasto or paIdIstat
+			Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(
+					o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()))
+					.findFirst();
+			if (ecConfig.isEmpty()) {
+				throw new CanoneUnicoException(
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = "+ e.getPaIdCatasto() +" or paIdIstat = "+e.getPaIdIstat());
+			}
+			
+			e.setPaIdFiscalCode(ecConfig.get().getRowKey());
+			e.setCompanyName(ecConfig.get().getCompanyName());
+			e.setIban(ecConfig.get().getIban());
+		}
+		else {
+			Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getRowKey().equals(e.getPaIdFiscalCode())).findFirst();
+			if (ecConfig.isEmpty()) {
+				throw new CanoneUnicoException(
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = "+ e.getPaIdFiscalCode());
+			}
+			
+			e.setCompanyName(ecConfig.get().getCompanyName());
+			e.setIban(ecConfig.get().getIban());
+		}
+	}
     
     private List<DebtPositionRowMessage> getDebtPositionQueueMsg (List<DebtPositionEntity> debtPositionEntities) {
     	List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>(); 
@@ -366,7 +425,7 @@ public class CuCsvService {
     		row.setAmount(Long.parseLong(e.getAmount()));
     		row.setIuv(e.getIuv());
     		row.setIupd(e.getIupd());
-    		row.setFiscalCode(e.getFiscalCode());
+    		row.setFiscalCode(e.getDebtorIdFiscalCode());
     		row.setCompanyName(e.getCompanyName());
     		row.setIban(e.getIban());
     		debtPositionMsgs.add(row);
