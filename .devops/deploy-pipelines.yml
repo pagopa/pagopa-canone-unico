@@ -187,8 +187,11 @@ stages:
                 $(pomversion.next)
 
           - task: AzureFunctionAppContainer@1
+            displayName: Azure Function Service Deploy
             inputs:
-              azureSubscription: '$(AZURE_SUBSCRIPTION)'
-              appName: '$(APP_NAME)'
-              imageName: '$(IMAGE_REPOSITORY)'
+              azureSubscription: $(AZURE_SUBSCRIPTION)
+              appName: "$(APP_NAME)"
+              imageName: "$(dockerNamespace)/$(IMAGE_REPOSITORY):$(pomversion.next)"
+              resourceGroupName: $(RESOURCE_GROUP)
+              slotName: production
 
