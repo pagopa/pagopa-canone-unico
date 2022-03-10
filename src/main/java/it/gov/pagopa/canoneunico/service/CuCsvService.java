@@ -66,7 +66,8 @@ public class CuCsvService {
     private String containerInputBlob              = System.getenv("INPUT_CSV_BLOB");
     private String containerErrorBlob              = System.getenv("ERROR_CSV_BLOB");
 	private String debtPositionTable               = System.getenv("DEBT_POSITIONS_TABLE");
-	private String iuvTable                        = System.getenv("IUV_TABLE");
+	private String iuvsTable                       = System.getenv("IUVS_TABLE");
+	private String iuvGenerationType               = System.getenv("IUV_GENERATION_TYPE");
 	private String ecConfigTable                   = System.getenv("EC_CONFIG_TABLE");
 	private String debtPositionQueue               = System.getenv("DEBT_POSITIONS_QUEUE");
 	private Integer segregationCode        	       = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
@@ -91,10 +92,10 @@ public class CuCsvService {
         this.logger = logger;
     }
     
-    public CuCsvService(String storageConnectionString, String debtPositionTable, String iuvTable, String segregationCode, Logger logger) {
+    public CuCsvService(String storageConnectionString, String debtPositionTable, String iuvsTable, String segregationCode, Logger logger) {
     	this.storageConnectionString = storageConnectionString;
     	this.debtPositionTable = debtPositionTable;
-    	this.iuvTable = iuvTable;
+    	this.iuvsTable = iuvsTable;
     	this.segregationCode = NumberUtils.toInt(segregationCode);
         this.logger = logger;
     }
@@ -180,9 +181,10 @@ public class CuCsvService {
     	// save debt positions partition in table 
     	IntStream.range(0, partitionDebtPositionEntities.size()).forEach(partitionAddIndex -> {
     		try {
-    			this.addDebtPositionEntityList(partitionDebtPositionEntities.get(partitionAddIndex));
+    			List<DebtPositionEntity> partitionBlock = partitionDebtPositionEntities.get(partitionAddIndex);
+    			this.addDebtPositionEntityList(partitionBlock);
     			logger.log(Level.INFO, () -> "[CuCsvService] Azure Table Storage - Add for partition index " + partitionAddIndex + " executed."); 
-    			savedDebtPositionEntities.addAll(partitionDebtPositionEntities.get(partitionAddIndex));
+    			savedDebtPositionEntities.addAll(partitionBlock);
     		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
     			logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Table Storage batch debt position entities: " + e.getMessage() + " " + e.getCause());
     		}
@@ -251,13 +253,13 @@ public class CuCsvService {
     }
 
     public void checkIUVExistence (IuvEntity iuvEntity) throws InvalidKeyException, URISyntaxException, StorageException  {
-    	logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table ["+iuvTable+"]: " + iuvEntity);
+    	logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table ["+iuvsTable+"]: " + iuvEntity);
     	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
-    	azuriteStorageUtil.createTable(iuvTable);
+    	azuriteStorageUtil.createTable(iuvsTable);
 
     	CloudTable table = CloudStorageAccount.parse(storageConnectionString)
     			.createCloudTableClient()
-    			.getTableReference(iuvTable);
+    			.getTableReference(iuvsTable);
 
     	TableBatchOperation batchOperation = new TableBatchOperation();
 
@@ -324,10 +326,16 @@ public class CuCsvService {
 	    return csv.toString();
     }
     
-	public String getValidIUV(String paIdFiscalCode, int segregationCode) throws CanoneUnicoException {
+	public String getValidIUV(String paIdFiscalCode, int segregationCode, int nextVal) throws CanoneUnicoException {
 		final int MAX_RETRY_COUNT = 7;
 		int retryCount = 1;
-		String iuv = this.generateIUV(segregationCode);
+		String iuv = null;
+		if (null != iuvGenerationType && iuvGenerationType.equalsIgnoreCase("seq")) {
+			iuv = this.generateIncrementalIUV(segregationCode, nextVal);
+		}
+		else {
+			iuv = this.generateIUV(segregationCode);
+		}
 		IuvEntity iuvEntity = new IuvEntity(paIdFiscalCode, iuv);
 		while (true) {
 			try {
@@ -336,12 +344,12 @@ public class CuCsvService {
 			} catch (InvalidKeyException | URISyntaxException | StorageException e) {
 				if (retryCount > MAX_RETRY_COUNT) {
 					throw new CanoneUnicoException(
-							"[CuCsvService] Azure Table Storage - table [" + iuvTable + "]: Unable to get a unique IUV in "+ MAX_RETRY_COUNT +" retry",
+							"[CuCsvService] Azure Table Storage - table [" + iuvsTable + "]: Unable to get a unique IUV in "+ MAX_RETRY_COUNT +" retry",
 							e);
 				}
 				logger.log(Level.WARNING, String.format(
 						"[CuCsvService] Azure Table Storage - Not unique IUV [%s] in table [%s]: a new one will be generated [retry = %s].",
-						iuv, iuvTable, retryCount));
+						iuv, iuvsTable, retryCount));
 				retryCount++;
 			}
 		}
@@ -359,11 +367,9 @@ public class CuCsvService {
     
     private List<DebtPositionEntity> getDebtPositionEntities (String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
     	List<DebtPositionEntity> debtPositionEntities = new ArrayList<>(); 
+    	int nextVal = 0;
     	for (PaymentNotice p: payments) {
     		DebtPositionEntity e = new DebtPositionEntity(fileName, p.getId());
-    		String iuv = this.getValidIUV(p.getPaIdFiscalCode(), segregationCode);
-    		e.setIuv(iuv);
-    		e.setIupd(this.generateIUPD(iuv));
     		e.setPaIdIstat(p.getPaIdIstat());
     		e.setPaIdCatasto(p.getPaIdCatasto());
     		e.setPaIdFiscalCode(p.getPaIdFiscalCode());
@@ -378,9 +384,12 @@ public class CuCsvService {
     		e.setDebtorEmail(p.getDebtorEmail());
     		e.setAmount(String.valueOf(p.getAmount()));
     		e.setStatus(Status.INSERTED.toString());
-    		
-    		// enrich with info from ec_config
+    		// enrich entity with info from ec_config
     		this.enrichDebtPositionEntity(e);
+    		// generate iuv and iupd
+    		String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
+    		e.setIuv(iuv);
+    		e.setIupd(this.generateIUPD(iuv));
     		
     		debtPositionEntities.add(e);
     		
@@ -400,6 +409,10 @@ public class CuCsvService {
 			}
 			
 			e.setPaIdFiscalCode(ecConfig.get().getRowKey());
+			e.setPaIdCbill(ecConfig.get().getPaIdCbill());
+			e.setPaPecEmail(ecConfig.get().getPaPecEmail());
+			e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
+			e.setPaReferentName(ecConfig.get().getPaReferentName());
 			e.setCompanyName(ecConfig.get().getCompanyName());
 			e.setIban(ecConfig.get().getIban());
 		}
@@ -410,6 +423,10 @@ public class CuCsvService {
 						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = "+ e.getPaIdFiscalCode());
 			}
 			
+			e.setPaIdCbill(ecConfig.get().getPaIdCbill());
+			e.setPaPecEmail(ecConfig.get().getPaPecEmail());
+			e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
+			e.setPaReferentName(ecConfig.get().getPaReferentName());
 			e.setCompanyName(ecConfig.get().getCompanyName());
 			e.setIban(ecConfig.get().getIban());
 		}

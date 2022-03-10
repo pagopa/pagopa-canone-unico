@@ -37,7 +37,12 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 			
 		}
 		
-		// check existence of the organization fiscal code
+		// check amount value
+		if (bean.getAmount() <= 0) {
+			errors.add("The amount must be greater than zero.");
+		}
+		
+		// check existence of the organization fiscal code if valued in csv file
 		if (null != bean.getPaIdFiscalCode() && !bean.getPaIdFiscalCode().isBlank() && !checkIsPresentOrganizationFiscalCode(bean.getPaIdFiscalCode())) {
 			errors.add("Not found the pa_id_fiscal_code ["+bean.getPaIdFiscalCode()+"].");
 		}

@@ -39,10 +39,12 @@ public class CuCsvParsing {
 
     	Logger logger = context.getLogger();
     	
+    	LocalDateTime start = LocalDateTime.now();
+    	
     	logger.log(Level.INFO, () ->
     			String.format(
-				"[CuCsvParsingFunction START] executed at: [%s] - fileName [%s]",
-				LocalDateTime.now(), fileName));
+				"[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
+				start, fileName));
 
     	CuCsvService csvService = this.getCuCsvServiceInstance(logger);
     	
@@ -70,7 +72,9 @@ public class CuCsvParsing {
     			// push in queue
     			csvService.pushDebtPosition(fileName, savedEntities);
 
-    			logger.log(Level.INFO, () -> "[CuCsvParsingFunction END] ended at: " + LocalDateTime.now() + " - fileName " + fileName);
+    			logger.log(Level.INFO, () -> String.format(
+    					"[CuCsvParsingFunction END] execution started at [%s] and ended at [%s] - fileName [%s]",
+    					start, LocalDateTime.now(), fileName));
     		}
     		else {
     			// If not valid file -> write log error, save on 'error' blob space and delete from 'input' blob space
@@ -89,11 +93,13 @@ public class CuCsvParsing {
     			// Delete the original file from input blob storage
     			csvService.deleteCsv(fileName);
     			
-    			logger.log(Level.INFO, () -> "[CuCsvParsingFunction END] ended at: " + LocalDateTime.now() + " - fileName " + fileName);
+    			logger.log(Level.INFO, () -> String.format(
+    					"[CuCsvParsingFunction END] execution started at [%s] and ended at [%s] - fileName [%s]",
+    					start, LocalDateTime.now(), fileName));
     		}
     	} catch (Exception e) {
 			logger.log(Level.SEVERE, () -> String.format(
-					"[CuCsvParsingFunction Error] Generic Error %s - %s - fileName %s",
+					"[CuCsvParsingFunction ERROR] Generic Error: error msg = %s - cause = %s - fileName %s",
 					e.getMessage(), e.getCause(), fileName));
 		} 
 

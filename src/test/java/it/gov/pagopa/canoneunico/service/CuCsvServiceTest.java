@@ -1,6 +1,7 @@
 package it.gov.pagopa.canoneunico.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.spy;
@@ -9,6 +10,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.queue.CloudQueue;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.CloudTableClient;
+import com.microsoft.azure.storage.table.TableBatchOperation;
 import com.microsoft.azure.storage.table.TableRequestOptions;
 import com.opencsv.bean.CsvToBean;
 
@@ -79,15 +83,47 @@ class CuCsvServiceTest {
         TableRequestOptions tableRequestOptions = new TableRequestOptions();
         tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
         cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
-        
+        CloudTable table = cloudTableClient.getTableReference("ecconfig");
         try {
-        	CloudTable table = cloudTableClient.getTableReference("ecconfig");
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        	table.delete();
+        	table.createIfNotExists();
+        }
+        
+        Assertions.assertThrows(CanoneUnicoException.class, () -> {csvService.initEcConfigList();});  
+    }
+    
+    @Test
+    void initEcConfigListWithValues() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "ecconfig", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("ecconfig");
+        try {
             table.createIfNotExists();
         } catch (Exception e) {
         	logger.info("Table already exist");
         }
         
-        Assertions.assertThrows(CanoneUnicoException.class, () -> {csvService.initEcConfigList();});  
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
+        ec.setPaIdCatasto("C123");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        
+        TableBatchOperation batchOperation = new TableBatchOperation();
+        batchOperation.insert(ec);
+        table.execute(batchOperation);
+        
+        csvService.initEcConfigList();
+        assertTrue(true);
     }
     
 
@@ -109,6 +145,50 @@ class CuCsvServiceTest {
         CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(1, csvToBean.parse().size());
+        
+    }
+    
+    @Test
+    void parseCsv_KO_Amount() {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        
+        StringWriter csv = new StringWriter();
+        
+        String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+        String row = "1;;C123;;;;;;0;123456;Spa;spa@pec.spa.it;;";
+        
+        csv.append(headers);
+        csv.append(System.lineSeparator());
+        csv.append(row);
+      
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        assertNotNull(csvToBean);
+        assertEquals(0, csvToBean.parse().size());
+        assertEquals(1, csvToBean.getCapturedExceptions().size());
+        
+    }
+    
+    @Test
+    void parseCsv_KO_Mutual_Exclusion() {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        
+        StringWriter csv = new StringWriter();
+        
+        String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+        String row = "1;C123;C123;;;;;;100;123456;Spa;spa@pec.spa.it;;";
+        
+        csv.append(headers);
+        csv.append(System.lineSeparator());
+        csv.append(row);
+      
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        assertNotNull(csvToBean);
+        assertEquals(0, csvToBean.parse().size());
+        assertEquals(1, csvToBean.getCapturedExceptions().size());
         
     }
     
@@ -315,7 +395,7 @@ class CuCsvServiceTest {
         CloudTable table = cloudTableClient.getTableReference("iuv");
         table.createIfNotExists();
         
-        String iuv = csvService.getValidIUV("fiscal-code", 47);
+        String iuv = csvService.getValidIUV("fiscal-code", 47, 1);
         assertNotNull(iuv); 
         assertEquals(17, iuv.getBytes().length);
         
@@ -358,6 +438,45 @@ class CuCsvServiceTest {
         
         String errorFile = csvService.generateErrorCsv(csv.toString(), validCsv);
         assertNotNull(errorFile);
+    }
+    
+    @Test
+    void enrichDebtPositionEntity() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    	Logger logger = Logger.getLogger("testlogging");
+    	var csvService = spy(new CuCsvService(logger));
+    	//precondition
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
+        Field list = csvService.getClass().getDeclaredField("organizationsList");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,organizationsList);
+        
+        DebtPositionEntity e = new DebtPositionEntity();
+        e.setPartitionKey("filename_0000.csv");
+        e.setRowKey("1");
+        e.setPaIdFiscalCode("paFiscalCode");
+        e.setDebtorName("name");
+        e.setDebtorEmail("email");
+        e.setAmount("0");
+        e.setIuv("iuv");
+        e.setIupd("iupd");
+        e.setDebtorIdFiscalCode("fiscalcode");
+        e.setStatus(Status.INSERTED.toString());
+        
+        assertNull(e.getCompanyName());
+        assertNull(e.getIban());
+        
+        Method m = csvService.getClass().getDeclaredMethod("enrichDebtPositionEntity", DebtPositionEntity.class);
+        m.setAccessible(true);
+        m.invoke(csvService, e);
+        
+        assertEquals("company", e.getCompanyName());
+        assertEquals("iban", e.getIban());
     }
     
     
