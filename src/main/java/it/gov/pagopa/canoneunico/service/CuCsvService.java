@@ -72,8 +72,8 @@ public class CuCsvService {
 	private String debtPositionQueue               = System.getenv("DEBT_POSITIONS_QUEUE");
 	private Integer segregationCode        	       = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
 	private List<EcConfigEntity> organizationsList = new ArrayList<>(); 
-	private int batchSizeDebtPosQueue      = 5;
-	private int batchSizeDebtPosTable      = 5;
+	private int batchSizeDebtPosQueue      = 100;
+	private int batchSizeDebtPosTable      = 100;
 	
     private Logger logger;
     
@@ -330,15 +330,15 @@ public class CuCsvService {
 		final int MAX_RETRY_COUNT = 7;
 		int retryCount = 1;
 		String iuv = null;
-		if (null != iuvGenerationType && iuvGenerationType.equalsIgnoreCase("seq")) {
-			iuv = this.generateIncrementalIUV(segregationCode, nextVal);
-		}
-		else {
-			iuv = this.generateIUV(segregationCode);
-		}
-		IuvEntity iuvEntity = new IuvEntity(paIdFiscalCode, iuv);
 		while (true) {
 			try {
+				if (null != iuvGenerationType && iuvGenerationType.equalsIgnoreCase("seq")) {
+					iuv = this.generateIncrementalIUV(segregationCode, nextVal);
+				}
+				else {
+					iuv = this.generateIUV(segregationCode);
+				}
+				IuvEntity iuvEntity = new IuvEntity(paIdFiscalCode, iuv);
 				this.checkIUVExistence(iuvEntity);
 				break;
 			} catch (InvalidKeyException | URISyntaxException | StorageException e) {

@@ -11,7 +11,7 @@
       "DEBT_POSITIONS_TABLE":"debtpostable",
       "EC_CONFIG_TABLE":"ecconfig",
       "IUVS_TABLE":"iuvstable",
-      "IUV_GENERATION_TYPE":"seq"
+      "IUV_GENERATION_TYPE":"rnd",
       "ORGANIZATIONS_CONFIG_TABLE":"organizationstable",
       "GPD_HOST":"http://localhost:8085",
       "NCRON_SCHEDULE_BATCH":"*/45 * * * * *",
