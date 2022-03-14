@@ -69,9 +69,8 @@ public class CuCsvParsing {
     			final List<PaymentNotice> payments = csvValidation.getPayments();
     			// save in Table
     			List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileName, payments);
-    			// push in queue
+				// push in queue
     			csvService.pushDebtPosition(fileName, savedEntities);
-
     			logger.log(Level.INFO, () -> String.format(
     					"[CuCsvParsingFunction END] execution started at [%s] and ended at [%s] - fileName [%s]",
     					start, LocalDateTime.now(), fileName));

@@ -68,7 +68,7 @@ public class CuCsvService {
 	private String debtPositionTable               = System.getenv("DEBT_POSITIONS_TABLE");
 	private String iuvsTable                       = System.getenv("IUVS_TABLE");
 	private String iuvGenerationType               = System.getenv("IUV_GENERATION_TYPE");
-	private String ecConfigTable                   = System.getenv("EC_CONFIG_TABLE");
+	private String ecConfigTable                   = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
 	private String debtPositionQueue               = System.getenv("DEBT_POSITIONS_QUEUE");
 	private Integer segregationCode        	       = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
 	private List<EcConfigEntity> organizationsList = new ArrayList<>(); 
@@ -171,7 +171,7 @@ public class CuCsvService {
     
     public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
 
-    	this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
+    	// this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
     	
 
     	List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
@@ -183,7 +183,7 @@ public class CuCsvService {
     		try {
     			List<DebtPositionEntity> partitionBlock = partitionDebtPositionEntities.get(partitionAddIndex);
     			this.addDebtPositionEntityList(partitionBlock);
-    			logger.log(Level.INFO, () -> "[CuCsvService] Azure Table Storage - Add for partition index " + partitionAddIndex + " executed."); 
+    			// logger.log(Level.INFO, () -> "[CuCsvService] Azure Table Storage - Add for partition index " + partitionAddIndex + " executed.");
     			savedDebtPositionEntities.addAll(partitionBlock);
     		} catch (InvalidKeyException | URISyntaxException | StorageException e) {
     			logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Table Storage batch debt position entities: " + e.getMessage() + " " + e.getCause());
@@ -209,7 +209,7 @@ public class CuCsvService {
             try {
             	debtPositionMessage.setRows(msgRows.get(partitionAddIndex));
                 this.addDebtPositionMsg(debtPositionMessage);
-                logger.log(Level.INFO, () -> "[CuCsvService] Azure Queue Storage - Add for partition index " + partitionAddIndex + " executed.");
+                // logger.log(Level.INFO, () -> "[CuCsvService] Azure Queue Storage - Add for partition index " + partitionAddIndex + " executed.");
             } catch (JsonProcessingException | StorageException | InvalidKeyException | URISyntaxException e) {
             	logger.log(Level.SEVERE, () -> "[CuCsvService] Exception in add Azure Queue Storage batch debt position queue msg: " + e.getMessage() + " " + e.getCause());
             	isAllMsgPushed.set(false);
@@ -222,7 +222,7 @@ public class CuCsvService {
     
     public void addDebtPositionMsg (DebtPositionMessage msg) throws InvalidKeyException, URISyntaxException, StorageException, JsonProcessingException {
     	
-    	logger.log(Level.INFO, () -> "[CuCsvService] pushing debt position in queue ["+debtPositionQueue+"]: " + msg);
+    	// logger.log(Level.INFO, () -> "[CuCsvService] pushing debt position in queue ["+debtPositionQueue+"]: " + msg);
     	
     	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
     	azuriteStorageUtil.createQueue(debtPositionQueue);
@@ -245,7 +245,7 @@ public class CuCsvService {
     	TableBatchOperation batchOperation = new TableBatchOperation();
 
     	debtPositionEntities.forEach(debtPosition -> {
-    		this.logger.log(Level.INFO, () -> "[CuCsvService] saving debt position in table ["+debtPositionTable+"]: " + debtPosition);
+    		// this.logger.log(Level.INFO, () -> "[CuCsvService] saving debt position in table ["+debtPositionTable+"]: " + debtPosition);
     		batchOperation.insert(debtPosition);
     	});
 
@@ -253,7 +253,7 @@ public class CuCsvService {
     }
 
     public void checkIUVExistence (IuvEntity iuvEntity) throws InvalidKeyException, URISyntaxException, StorageException  {
-    	logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table ["+iuvsTable+"]: " + iuvEntity);
+    	// logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table ["+iuvsTable+"]: " + iuvEntity);
     	AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
     	azuriteStorageUtil.createTable(iuvsTable);
 
