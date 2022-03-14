@@ -1,6 +1,8 @@
 package it.gov.pagopa.canoneunico.functions;
 
 import com.microsoft.azure.functions.ExecutionContext;
+
+import it.gov.pagopa.canoneunico.functions.CuCreateDebtPosition;
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.service.DebtPositionTableService;
