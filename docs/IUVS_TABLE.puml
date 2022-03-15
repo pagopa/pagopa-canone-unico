@@ -1,0 +1,13 @@
+@startuml Table
+
+title IUVs Table
+
+entity IUVS_TABLE {
+    * String partitionKeys <<paIdFiscalCode>>
+    * String rowKey <<iuv>>
+    --
+      String etag ("*")
+      String timeStamp (format YYYY-MM-DD hh:mm:ss)
+}
+
+@enduml

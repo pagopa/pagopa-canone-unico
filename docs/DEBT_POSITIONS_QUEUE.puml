@@ -1,0 +1,23 @@
+@startjson
+
+title Debtor Positions Queue
+
+    {
+      "csvFilename": "string",
+      "rows": [
+        {
+          "id": "string",
+          "debtorName": "string",
+          "debtorEmail": "string",
+          "amount": 0,
+          "iuv": "string",
+          "iupd": "string",
+          "fiscalCode": "string",
+          "companyName": "string",
+          "iban": "string"
+        }
+      ]
+    }
+
+
+@endjson
