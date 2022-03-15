@@ -1,0 +1,21 @@
+@startuml Table
+
+title Organizations Config Table
+
+entity ORGANIZATIONS_CONFIG_TABLE {
+  * String partitionKeys ("org")
+  * String rowKey <<paIdFiscalCode>>
+  --
+    String paIdIstat
+    String paIdCatasto
+    String paIdCbill
+    String paPecEmail
+    String paReferentEmail
+    String paReferentName
+    String companyName
+    String iban
+    String etag ("*")
+    String timeStamp (format YYYY-MM-DD hh:mm:ss)
+}
+
+@enduml
