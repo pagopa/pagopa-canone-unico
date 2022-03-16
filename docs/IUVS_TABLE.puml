@@ -3,7 +3,7 @@
 title IUVs Table
 
 entity IUVS_TABLE {
-    * String partitionKeys <<paIdFiscalCode>>
+    * String partitionKey <<paIdFiscalCode>>
     * String rowKey <<iuv>>
     --
       String etag ("*")
