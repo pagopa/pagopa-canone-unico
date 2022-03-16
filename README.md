@@ -27,7 +27,7 @@ Canone Unico consists of 3 Azure functions:
   for each element in the CSV
 - **CuGenerateOutputCsv** every day creates a report in the blob storage
 
-![schema]()
+![schema](./docs/schema-infrastructure.png?raw=true)
 
 
 ---  
