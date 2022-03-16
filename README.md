@@ -22,10 +22,10 @@
 
 Canone Unico consists of 3 Azure functions:
 
-- **CuCsvParsing** validates and parse the CSV content in the blob storage
+- **CuCsvParsing** validates and parses the CSV content in the input blob storage
 - **CuCreateDebtPosition** calls [GPD](https://github.com/pagopa/pagopa-debt-position) service to create a debt position
-  for each element in the CSV
-- **CuGenerateOutputCsv** every day creates a report in the blob storage
+  for each element in the queue
+- **CuGenerateOutputCsv** every day creates a report in the output blob storage
 
 ![schema](./docs/schema-infrastructure.png?raw=true)
 
@@ -37,7 +37,7 @@ Canone Unico consists of 3 Azure functions:
 ### Prerequisites
 
 - Docker
-- (Optional) Python 3
+- [Optional] Python 3 _(required for GPD mock service)_
 
 ### Run docker container
 
@@ -58,8 +58,8 @@ _NOTE: to create a **GPD mock** run in the mock directory:_ `python gpd.py`
 - [azure-functions-core-tools v3](https://docs.microsoft.com/it-it/azure/azure-functions/functions-run-local?tabs=v3%2Cwindows%2Ccsharp%2Cportal%2Cbash)
 - [Azurite](https://docs.microsoft.com/it-it/azure/storage/common/storage-use-azurite?tabs=visual-studio)
 - create a `local.setting.json` file (see: `local.setting.json.example`)
-- (Optional) [Azure Storage Explorer](https://azure.microsoft.com/it-it/features/storage-explorer/)
-- (Optional) Python 3
+- [Optional] [Azure Storage Explorer](https://azure.microsoft.com/it-it/features/storage-explorer/)
+- [Optional] Python 3 _(required for GPD mock service)_
 
 ### Run the project
 
@@ -76,9 +76,6 @@ _NOTE: to create a **GPD mock** run in the mock directory:_ `python gpd.py`
 ### Prerequisites
 
 - maven
-- [newman](https://www.npmjs.com/package/newman)
-- [postman-to-k6](https://github.com/apideck-libraries/postman-to-k6)
-- [k6](https://k6.io/)
 
 ### Unit testing
 

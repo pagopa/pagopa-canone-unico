@@ -3,7 +3,7 @@
 title Debtor Positions Table
 
 entity DEBT_POSITIONS_TABLE {
-  * String partitionKeys <<csv_file_name>>
+  * String partitionKey <<csv_file_name>>
   * String rowKey <<id>>
   --
     String status ("INSERTED" | "CREATED" | "ERROR")

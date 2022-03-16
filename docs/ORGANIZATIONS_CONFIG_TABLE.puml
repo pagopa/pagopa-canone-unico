@@ -3,7 +3,7 @@
 title Organizations Config Table
 
 entity ORGANIZATIONS_CONFIG_TABLE {
-  * String partitionKeys ("org")
+  * String partitionKey ("org")
   * String rowKey <<paIdFiscalCode>>
   --
     String paIdIstat
