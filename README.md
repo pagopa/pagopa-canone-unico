@@ -9,9 +9,8 @@
         + [Prerequisites](#prerequisites-1)
         + [Run the project](#run-the-project)
     * [Testing 🧪](#testing---)
-        - [Unit testing](#unit-testing)
-        - [Integration testing](#integration-testing)
-        - [Load testing](#load-testing)
+        + [Prerequisites](#prerequisites-2)
+        + [Unit testing](#unit-testing)
     * [Mainteiners 👨‍💻](#mainteiners------)
 
 ---
@@ -21,13 +20,24 @@
 - Java 11
 - Azure functions
 
+Canone Unico consists of 3 Azure functions:
+
+- **CuCsvParsing** validates and parse the CSV content in the blob storage
+- **CuCreateDebtPosition** calls [GPD](https://github.com/pagopa/pagopa-debt-position) service to create a debt position
+  for each element in the CSV
+- **CuGenerateOutputCsv** every day creates a report in the blob storage
+
+![schema]()
+
+
 ---  
 
 ## Start Project Locally 🚀
 
 ### Prerequisites
 
-- docker
+- Docker
+- (Optional) Python 3
 
 ### Run docker container
 
@@ -36,6 +46,8 @@ Under root folder typing:
 ```
 docker run -t canone-unico
 ```
+
+_NOTE: to create a **GPD mock** run in the mock directory:_ `python gpd.py`
 
 ---
 
@@ -47,6 +59,7 @@ docker run -t canone-unico
 - [Azurite](https://docs.microsoft.com/it-it/azure/storage/common/storage-use-azurite?tabs=visual-studio)
 - create a `local.setting.json` file (see: `local.setting.json.example`)
 - (Optional) [Azure Storage Explorer](https://azure.microsoft.com/it-it/features/storage-explorer/)
+- (Optional) Python 3
 
 ### Run the project
 
@@ -55,6 +68,8 @@ Under root folder typing:
 `mvn azure-functions:run`
 
 ---
+
+_NOTE: to create a **GPD mock** run in the mock directory:_ `python gpd.py`
 
 ## Testing 🧪
 
@@ -67,7 +82,7 @@ Under root folder typing:
 
 ### Unit testing
 
-Under `payments` folder typing:
+Under root folder typing:
 
 `mvn clean verify`
 
