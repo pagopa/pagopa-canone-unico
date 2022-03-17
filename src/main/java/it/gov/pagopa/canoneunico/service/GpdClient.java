@@ -10,6 +10,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -26,16 +28,21 @@ public class GpdClient {
         return instance;
     }
 
-    public boolean createDebtPosition(String idPa, PaymentPositionModel body) {
+    public boolean createDebtPosition(Logger logger, String idPa, PaymentPositionModel body) {
         try {
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD] Calling GPD service: " + idPa);
             Response response = ClientBuilder.newClient()
                     .register(JacksonJaxbJsonProvider.class)
                     .target(gpdHost + String.format(POST_DEBT_POSITIONS, idPa))
                     .request()
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.json(body));
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD] HTTP status: " + response.getStatus()
+                    + ", Body: " + response.getEntity());
             return response.getStatus() == HttpStatus.CREATED.value();
         } catch (Exception e) {
+            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR] error during the GPD call " + e.getMessage() + " "
+                    + e.getCause());
             return false;
         }
     }

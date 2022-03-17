@@ -12,6 +12,8 @@ import it.gov.pagopa.canoneunico.model.Transfer;
 import it.gov.pagopa.canoneunico.service.DebtPositionTableService;
 import it.gov.pagopa.canoneunico.service.GpdClient;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,7 +46,7 @@ public class CuCreateDebtPosition {
 
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END]  processed a message " + message);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction Error] Generic Error " + e.getMessage() + " "
+            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR] Generic Error " + e.getMessage() + " "
                     + e.getCause() + " - message " + message);
         }
 
@@ -62,21 +64,20 @@ public class CuCreateDebtPosition {
 
         GpdClient gpdClient = this.getGpdClientInstance();
 
-        logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction] Calling GPD service: " + row.getFiscalCode());
-        var status = gpdClient.createDebtPosition(row.getFiscalCode(), PaymentPositionModel.builder()
+        var status = gpdClient.createDebtPosition(logger, row.getFiscalCode(), PaymentPositionModel.builder()
                 .iupd(row.getIupd())
                 .type("G")
                 .fiscalCode(row.getFiscalCode())
                 .fullName(row.getDebtorName())
                 .email(row.getDebtorEmail())
                 .companyName(row.getCompanyName())
-                .validityDate("2022-12-31T23:59:59.999Z")
+                .validityDate(LocalDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .paymentOption(List.of(PaymentOptionModel.builder()
                         .iuv(row.getIuv())
                         .amount(row.getAmount())
                         .description("Canone Unico Patrimoniale - CORPORATE")
                         .isPartialPayment(false)
-                        .dueDate("2022-04-30T23:59:59.999Z")
+                        .dueDate("2023-04-30T23:59:59.999Z")
                         .transfer(List.of(Transfer.builder()
                                 .idTransfer("1")
                                 .amount(row.getAmount())
