@@ -1,8 +1,6 @@
 package it.gov.pagopa.canoneunico.functions;
 
 import com.microsoft.azure.functions.ExecutionContext;
-
-import it.gov.pagopa.canoneunico.functions.CuCreateDebtPosition;
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.service.DebtPositionTableService;
@@ -62,7 +60,7 @@ class CuCreateDebtPositionTest {
         function.run(message, context);
 
         // Asserts
-        verify(gpdClient, times(1)).createDebtPosition(any(), any());
+        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any());
         verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean());
 
     }
