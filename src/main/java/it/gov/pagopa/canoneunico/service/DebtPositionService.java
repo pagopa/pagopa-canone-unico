@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class DebtPositionService {
 
   private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+  private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
 
   private String storageConnectionString;
   private String debtPositionsTable;
@@ -133,7 +134,7 @@ public class DebtPositionService {
                     entity.getDebtorIdFiscalCode(),
                     entity.getDebtorName(),
                     entity.getDebtorEmail(),
-                    entity.getPaymentNoticeNumber(),
+                    CU_AUX_DIGIT+entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
                     entity.getNote());
                 rowsList.add(rowsItem);
               }
