@@ -46,7 +46,7 @@ public class DebtPositionTableService {
      */
     public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status) {
 
-        this.logger.log(Level.INFO, "[DebtPositionTableService] START storing ");
+        this.logger.log(Level.INFO, "[DebtPositionTableService] start storing ");
 
         try {
             // get the table
@@ -61,15 +61,15 @@ public class DebtPositionTableService {
 
             table.execute(updateOperation);
 
-            this.logger.log(Level.INFO, "[DebtPositionTableService] END completed");
+            this.logger.log(Level.INFO, "[DebtPositionTableService] storing completed");
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService] Error " + e);
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR] Error " + e);
         }
     }
 
     public DebtPositionEntity getEntity(String filename, String id) {
 
-        this.logger.log(Level.INFO, "[DebtPositionTableService] START get entity ");
+        this.logger.log(Level.INFO, "[DebtPositionTableService] get entity ");
 
         try {
             // get the table
@@ -85,7 +85,7 @@ public class DebtPositionTableService {
             return result.iterator().next();
 
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService] Error " + e);
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR] Error " + e);
         }
         return null;
     }
@@ -107,7 +107,7 @@ public class DebtPositionTableService {
             table.execute(batchOperation);
 
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            logger.log(Level.SEVERE, () -> "[DebtPositionTableService] Error during batch insert " + e.getLocalizedMessage());
+            logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR] Error during batch insert " + e.getLocalizedMessage());
         }
     }
 
@@ -116,7 +116,7 @@ public class DebtPositionTableService {
         try {
             azuriteStorageUtil.createTable(tableName);
         } catch (Exception e) {
-            this.logger.severe(String.format("[DebtPositionTableService] Problem to create table or queue: %s", e.getMessage()));
+            this.logger.severe(String.format("[DebtPositionTableService ERROR] Problem to create table or queue: %s", e.getMessage()));
         }
     }
 
