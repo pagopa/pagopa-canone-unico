@@ -397,14 +397,16 @@ public class CuCsvService {
 		if (null == e.getPaIdFiscalCode() || e.getPaIdFiscalCode().isBlank()) {
 			// get extra info by paIdCatasto or paIdIstat
 			Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(
-					o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()))
+							o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()))
 					.findFirst();
 			if (ecConfig.isEmpty()) {
 				throw new CanoneUnicoException(
-						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = "+ e.getPaIdCatasto() +" or paIdIstat = "+e.getPaIdIstat());
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat());
 			}
-			
+
 			e.setPaIdFiscalCode(ecConfig.get().getRowKey());
+			e.setPaIdIstat(ecConfig.get().getPaIdIstat());
+			e.setPaIdCatasto(ecConfig.get().getPaIdCatasto());
 			e.setPaIdCbill(ecConfig.get().getPaIdCbill());
 			e.setPaPecEmail(ecConfig.get().getPaPecEmail());
 			e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
@@ -416,10 +418,12 @@ public class CuCsvService {
 			Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getRowKey().equals(e.getPaIdFiscalCode())).findFirst();
 			if (ecConfig.isEmpty()) {
 				throw new CanoneUnicoException(
-						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = "+ e.getPaIdFiscalCode());
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = " + e.getPaIdFiscalCode());
 			}
-			
+
 			e.setPaIdCbill(ecConfig.get().getPaIdCbill());
+			e.setPaIdIstat(ecConfig.get().getPaIdIstat());
+			e.setPaIdCatasto(ecConfig.get().getPaIdCatasto());
 			e.setPaPecEmail(ecConfig.get().getPaPecEmail());
 			e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
 			e.setPaReferentName(ecConfig.get().getPaReferentName());
