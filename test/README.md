@@ -37,7 +37,7 @@ Example:
 
 ## Upload
 
-Creates a CSV file with fake data and uploads it to blob storage.
+Uploads a file in the blob storage. If `rows` is set it creates a CSV file with fake data first.
 
 `python3 ./blob_utils.py upload --file {name of the file to upload}`
 
@@ -45,7 +45,7 @@ Optional
 
 ```
 --rows {numbers of rows to generate in the CSV}
---path {local path where create the CSV}
+--path {local path where find the CSV}
 --account-name {name of storage account}
 --container_name {name of the container}
 ```
