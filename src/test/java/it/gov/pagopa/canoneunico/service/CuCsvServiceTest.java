@@ -1,32 +1,5 @@
 package it.gov.pagopa.canoneunico.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.spy;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.junit.ClassRule;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -41,7 +14,6 @@ import com.microsoft.azure.storage.table.CloudTableClient;
 import com.microsoft.azure.storage.table.TableBatchOperation;
 import com.microsoft.azure.storage.table.TableRequestOptions;
 import com.opencsv.bean.CsvToBean;
-
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
@@ -51,6 +23,32 @@ import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.spy;
 
 @Testcontainers
 class CuCsvServiceTest {
@@ -295,7 +293,7 @@ class CuCsvServiceTest {
         e.setDebtorName("name");
         e.setDebtorEmail("email");
         e.setAmount("0");
-        e.setIuv("iuv");
+        e.setPaymentNoticeNumber("iuv");
         e.setIupd("iupd");
         e.setDebtorIdFiscalCode("fiscalcode");
         e.setCompanyName("companyname");
@@ -334,7 +332,7 @@ class CuCsvServiceTest {
         e.setDebtorName("name");
         e.setDebtorEmail("email");
         e.setAmount("0");
-        e.setIuv("iuv");
+        e.setPaymentNoticeNumber("iuv");
         e.setIupd("iupd");
         e.setDebtorIdFiscalCode("fiscalcode");
         e.setCompanyName("companyname");
@@ -463,7 +461,7 @@ class CuCsvServiceTest {
         e.setDebtorName("name");
         e.setDebtorEmail("email");
         e.setAmount("0");
-        e.setIuv("iuv");
+        e.setPaymentNoticeNumber("iuv");
         e.setIupd("iupd");
         e.setDebtorIdFiscalCode("fiscalcode");
         e.setStatus(Status.INSERTED.toString());
