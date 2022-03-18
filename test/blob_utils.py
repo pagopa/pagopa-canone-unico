@@ -31,28 +31,29 @@ args = parser.parse_args()
 action = args.action
 file = args.file
 path = args.path or "."
-rows = args.rows or 1
+rows = args.rows
 account_name = args.account_name or "pagopadcanoneunicosa"
 container_name = args.container_name or "pagopadcanoneunicosaincsvcontainer"
 
 if action == Action.Upload:
     os.system(f'mkdir -p {path}')
-    with open(path + "/" + file, 'w', encoding='UTF8') as f:
-        writer = csv.writer(f, delimiter=';')
-        header = ["id", "pa_id_istat", "pa_id_catasto", "pa_id_fiscal_code", "pa_id_cbill", "pa_pec_email",
-                  "pa_referent_email",
-                  "pa_referent_name", "amount", "debtor_id_fiscal_code", "debtor_name", "debtor_email",
-                  "payment_notice_number",
-                  "note"]
-        # write the header
-        writer.writerow(header)
+    if rows:
+        with open(path + "/" + file, 'w', encoding='UTF8') as f:
+            writer = csv.writer(f, delimiter=';')
+            header = ["id", "pa_id_istat", "pa_id_catasto", "pa_id_fiscal_code", "pa_id_cbill", "pa_pec_email",
+                      "pa_referent_email",
+                      "pa_referent_name", "amount", "debtor_id_fiscal_code", "debtor_name", "debtor_email",
+                      "payment_notice_number",
+                      "note"]
+            # write the header
+            writer.writerow(header)
 
-        for i in range(1, rows + 1):
-            data = [i, "", "", "11111111111", "", "fake@email.com", "pa_referent_email", "pa_referent_name",
-                    random.randint(1, 100000), str(random.randint(0, 99999999999)).zfill(11),
-                    "Lorem ipsum", "lorem@pec.loremit", "", ""]
-            # write the data
-            writer.writerow(data)
+            for i in range(1, rows + 1):
+                data = [i, "", "", "11111111111", "", "fake@email.com", "pa_referent_email", "pa_referent_name",
+                        random.randint(1, 100000), str(random.randint(0, 99999999999)).zfill(11),
+                        "Lorem ipsum", "lorem@pec.loremit", "", ""]
+                # write the data
+                writer.writerow(data)
 
     os.system(
         f'az storage blob upload --account-name {account_name} --auth-mode key -c {container_name} -f {path}/{file} -n {file}')
