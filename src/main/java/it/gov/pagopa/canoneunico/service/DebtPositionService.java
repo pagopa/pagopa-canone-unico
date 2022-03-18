@@ -14,7 +14,10 @@ import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
@@ -27,36 +30,34 @@ import java.util.stream.Collectors;
 
 public class DebtPositionService {
 
-  private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
-  private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
+    private static final String CSV_HEAD =
+            "id;status;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+    private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
+    private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+    private final String storageConnectionString;
+    private final String debtPositionsTable;
+    private final String containerBlobIn;
+    private final String containerBlobOut;
+    private final Logger logger;
 
-  private String storageConnectionString;
-  private String debtPositionsTable;
-  private String containerBlobIn;
-  private String containerBlobOut;
-  private Logger logger;
+    public DebtPositionService(
+            String storageConnectionString,
+            String debtPositionsTable,
+            String containerBlobIn,
+            String containerBlobOut,
+            Logger logger) {
+        this.storageConnectionString = storageConnectionString;
+        this.debtPositionsTable = debtPositionsTable;
+        this.containerBlobIn = containerBlobIn;
+        this.containerBlobOut = containerBlobOut;
+        this.logger = logger;
+    }
 
-  private static final String CSV_HEAD =
-      "id,status,pa_id_istat,pa_id_catasto,pa_id_fiscal_code,pa_id_cbill,pa_pec_email,pa_referent_email,pa_referent_name,amount,debtor_id_fiscal_code,debtor_name,debtor_email,payment_notice_number,note";
+    public List<String> getCsvFilePk() {
+        // try to create Azure table and queue
+        createEnv();
 
-  public DebtPositionService(
-      String storageConnectionString,
-      String debtPositionsTable,
-      String containerBlobIn,
-      String containerBlobOut,
-      Logger logger) {
-    this.storageConnectionString = storageConnectionString;
-    this.debtPositionsTable = debtPositionsTable;
-    this.containerBlobIn = containerBlobIn;
-    this.containerBlobOut = containerBlobOut;
-    this.logger = logger;
-  }
-
-  public List<String> getCsvFilePk() {
-    // try to create Azure table and queue
-    createEnv();
-
-    this.logger.info("[OrganizationsService] Processing organization list");
+        this.logger.info("[OrganizationsService] Processing organization list");
 
     BlobServiceClient blobServiceClient =
         new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
@@ -119,45 +120,52 @@ public class DebtPositionService {
               for (DebtPositionEntity entity :
                   table.execute(
                       TableQuery.from(DebtPositionEntity.class).where(combinedFilterCreated))) {
-                List<String> rowsItem = new ArrayList<>();
+                  List<String> rowsItem = new ArrayList<>();
                   Collections.addAll(
-                    rowsItem,
-                    entity.getRowKey(),
-                    entity.getStatus(),
-                    entity.getPaIdIstat(),
-                    entity.getPaIdCatasto(),
-                    entity.getPaIdFiscalCode(),
-                    entity.getPaIdCbill(),
-                    entity.getPaPecEmail(),
-                    entity.getPaReferentEmail(),
-                    entity.getAmount(),
-                    entity.getDebtorIdFiscalCode(),
-                    entity.getDebtorName(),
-                    entity.getDebtorEmail(),
-                    CU_AUX_DIGIT+entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
-                    entity.getNote());
-                rowsList.add(rowsItem);
+                          rowsItem,
+                          deNull(entity.getRowKey()),
+                          deNull(entity.getStatus()),
+                          deNull(entity.getPaIdIstat()),
+                          deNull(entity.getPaIdCatasto()),
+                          deNull(entity.getPaIdFiscalCode()),
+                          deNull(entity.getPaIdCbill()),
+                          deNull(entity.getPaPecEmail()),
+                          deNull(entity.getPaReferentEmail()),
+                          deNull(entity.getPaReferentName()),
+                          deNull(entity.getAmount()),
+                          deNull(entity.getDebtorIdFiscalCode()),
+                          deNull(entity.getDebtorName()),
+                          deNull(entity.getDebtorEmail()),
+                          CU_AUX_DIGIT + entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
+                          deNull(entity.getNote()));
+                  rowsList.add(rowsItem);
               }
-              return rowsList;
+                return rowsList;
             })
-        .collect(Collectors.toList());
+            .collect(Collectors.toList());
   }
 
-  public void uploadOutFile(String csvFileName, List<List<String>> dataLines)
-      throws FileNotFoundException {
-    // insert blob in OUTPUT container
-    BlobServiceClient blobServiceClient =
-        new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
-    BlobContainerClient containerBlobOutClient =
-        blobServiceClient.getBlobContainerClient(this.containerBlobOut);
-    BlobClient blobClient = containerBlobOutClient.getBlobClient(csvFileName);
-
-    File csvOutputFile = new File(csvFileName);
-
-    dataLines.add(0, List.of(CSV_HEAD.split(",")));
-    try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-      dataLines.stream().map(this::convertToCSV).forEach(pw::println);
+    private String deNull(Object item) {
+        return item != null ? item.toString() : "";
     }
+
+    public void uploadOutFile(String csvFileName, List<List<String>> dataLines)
+            throws FileNotFoundException {
+        // insert blob in OUTPUT container
+        BlobServiceClient blobServiceClient =
+                new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
+        BlobContainerClient containerBlobOutClient =
+                blobServiceClient.getBlobContainerClient(this.containerBlobOut);
+        BlobClient blobClient = containerBlobOutClient.getBlobClient(csvFileName);
+
+        File csvOutputFile = new File(csvFileName);
+
+        dataLines.add(0, List.of(CSV_HEAD.split(";")));
+        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            dataLines.stream()
+                    .map(this::convertToCSV)
+                    .forEach(pw::println);
+        }
 
     blobClient.upload(BinaryData.fromStream(new FileInputStream(csvOutputFile)));
 
@@ -172,7 +180,7 @@ public class DebtPositionService {
   }
 
   private String convertToCSV(List<String> data) {
-    return String.join(",", data);
+      return String.join(";", data);
   }
 
   private void createEnv() {

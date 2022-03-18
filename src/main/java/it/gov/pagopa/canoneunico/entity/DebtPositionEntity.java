@@ -22,7 +22,6 @@ public class DebtPositionEntity extends TableServiceEntity {
     private String paReferentEmail;
     private String paReferentName;
     private String debtorIdFiscalCode;
-    private String paymentNoticeNumber;
     private String note;
 
     private String debtorName;
@@ -30,7 +29,7 @@ public class DebtPositionEntity extends TableServiceEntity {
     private String amount; // Long
 
     // generated
-    private String iuv;
+    private String paymentNoticeNumber;
     private String iupd;
 
     // EC config

@@ -1,23 +1,5 @@
 package it.gov.pagopa.canoneunico.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.math.NumberUtils;
-
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -40,7 +22,6 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
@@ -57,43 +38,59 @@ import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 
 @NoArgsConstructor
 public class CuCsvService {
-	
-	private String storageConnectionString         = System.getenv("CU_SA_CONNECTION_STRING");
-    private String containerInputBlob              = System.getenv("INPUT_CSV_BLOB");
-    private String containerErrorBlob              = System.getenv("ERROR_CSV_BLOB");
-	private String debtPositionTable               = System.getenv("DEBT_POSITIONS_TABLE");
-	private String iuvsTable                       = System.getenv("IUVS_TABLE");
-	private String iuvGenerationType               = System.getenv("IUV_GENERATION_TYPE");
-	private String ecConfigTable                   = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
-	private String debtPositionQueue               = System.getenv("DEBT_POSITIONS_QUEUE");
-	private Integer segregationCode        	       = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
-	private List<EcConfigEntity> organizationsList = new ArrayList<>(); 
-	private int batchSizeDebtPosQueue      = 100;
-	private int batchSizeDebtPosTable      = 100;
-	
-    private Logger logger;
-    
 
-    public CuCsvService(Logger logger) {
-        this.logger = logger;
-    }
-    
-    public CuCsvService(String storageConnectionString, String containerInputBlob, 
-    		String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
-    	this.storageConnectionString = storageConnectionString;
-    	this.containerInputBlob = containerInputBlob;
-    	this.containerErrorBlob = containerErrorBlob;
-    	this.debtPositionTable = debtPositionTable;
-    	this.debtPositionQueue = debtPositionQueue;
-        this.logger = logger;
-    }
-    
-    public CuCsvService(String storageConnectionString, String debtPositionTable, String iuvsTable, String segregationCode, Logger logger) {
-    	this.storageConnectionString = storageConnectionString;
+	private final String iuvGenerationType = System.getenv("IUV_GENERATION_TYPE");
+	private final List<EcConfigEntity> organizationsList = new ArrayList<>();
+	private final int batchSizeDebtPosQueue = 100;
+	private final int batchSizeDebtPosTable = 100;
+	private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
+	private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
+	private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
+	private String debtPositionTable = System.getenv("DEBT_POSITIONS_TABLE");
+	private String iuvsTable = System.getenv("IUVS_TABLE");
+	private String ecConfigTable = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
+	private String debtPositionQueue = System.getenv("DEBT_POSITIONS_QUEUE");
+	private Integer segregationCode = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
+	private Logger logger;
+
+
+	public CuCsvService(Logger logger) {
+		this.logger = logger;
+	}
+
+	public CuCsvService(String storageConnectionString, String containerInputBlob,
+						String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
+		this.storageConnectionString = storageConnectionString;
+		this.containerInputBlob = containerInputBlob;
+		this.containerErrorBlob = containerErrorBlob;
+		this.debtPositionTable = debtPositionTable;
+		this.debtPositionQueue = debtPositionQueue;
+		this.logger = logger;
+	}
+
+	public CuCsvService(String storageConnectionString, String debtPositionTable, String iuvsTable, String segregationCode, Logger logger) {
+		this.storageConnectionString = storageConnectionString;
     	this.debtPositionTable = debtPositionTable;
     	this.iuvsTable = iuvsTable;
     	this.segregationCode = NumberUtils.toInt(segregationCode);
@@ -377,23 +374,22 @@ public class CuCsvService {
     		e.setPaPecEmail(p.getPaPecEmail());
     		e.setPaReferentName(p.getPaReferentName());
     		e.setPaReferentEmail(p.getPaReferentEmail());
-    		e.setDebtorIdFiscalCode(p.getDebtorFiscalCode());
-    		e.setPaymentNoticeNumber(String.valueOf(p.getPaymentNoticeNumber()));
-    		e.setNote(p.getNote());
-    		e.setDebtorName(p.getDebtorName());
-    		e.setDebtorEmail(p.getDebtorEmail());
-    		e.setAmount(String.valueOf(p.getAmount()));
-    		e.setStatus(Status.INSERTED.toString());
-    		// enrich entity with info from ec_config
-    		this.enrichDebtPositionEntity(e);
-    		// generate iuv and iupd
-    		String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
-    		e.setIuv(iuv);
-    		e.setIupd(this.generateIUPD(iuv));
-    		
-    		debtPositionEntities.add(e);
-    		
-    	}
+			e.setDebtorIdFiscalCode(p.getDebtorFiscalCode());
+			e.setNote(p.getNote());
+			e.setDebtorName(p.getDebtorName());
+			e.setDebtorEmail(p.getDebtorEmail());
+			e.setAmount(String.valueOf(p.getAmount()));
+			e.setStatus(Status.INSERTED.toString());
+			// enrich entity with info from ec_config
+			this.enrichDebtPositionEntity(e);
+			// generate iuv and iupd
+			String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
+			e.setPaymentNoticeNumber(iuv);
+			e.setIupd(this.generateIUPD(iuv));
+
+			debtPositionEntities.add(e);
+
+		}
 		return debtPositionEntities;
     }
     
@@ -435,18 +431,18 @@ public class CuCsvService {
     private List<DebtPositionRowMessage> getDebtPositionQueueMsg (List<DebtPositionEntity> debtPositionEntities) {
     	List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>(); 
     	for (DebtPositionEntity e: debtPositionEntities) {
-    		DebtPositionRowMessage row = new DebtPositionRowMessage();
-    		row.setId(e.getRowKey());
-    		row.setDebtorName(e.getDebtorName());
-    		row.setDebtorEmail(e.getDebtorEmail());
-    		row.setAmount(Long.parseLong(e.getAmount()));
-    		row.setIuv(e.getIuv());
-    		row.setIupd(e.getIupd());
-    		row.setFiscalCode(e.getDebtorIdFiscalCode());
-    		row.setCompanyName(e.getCompanyName());
-    		row.setIban(e.getIban());
-    		debtPositionMsgs.add(row);
-    	}
+			DebtPositionRowMessage row = new DebtPositionRowMessage();
+			row.setId(e.getRowKey());
+			row.setDebtorName(e.getDebtorName());
+			row.setDebtorEmail(e.getDebtorEmail());
+			row.setAmount(Long.parseLong(e.getAmount()));
+			row.setIuv(e.getPaymentNoticeNumber());
+			row.setIupd(e.getIupd());
+			row.setFiscalCode(e.getDebtorIdFiscalCode());
+			row.setCompanyName(e.getCompanyName());
+			row.setIban(e.getIban());
+			debtPositionMsgs.add(row);
+		}
 		return debtPositionMsgs;
     }
     

@@ -1,41 +1,15 @@
 package it.gov.pagopa.canoneunico.service;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-
-import java.io.*;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import javax.activation.DataHandler;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-
 import com.azure.core.util.BinaryData;
-import com.azure.data.tables.implementation.models.Logging;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobItem;
-
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.TableOperation;
-import com.microsoft.azure.storage.table.TableQuery;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
 import org.junit.ClassRule;
@@ -45,20 +19,37 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import javax.xml.datatype.DatatypeConfigurationException;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.spy;
+
 @Testcontainers
 class DebtPositionServiceIntegrationTest {
 
-  @ClassRule @Container
+  @ClassRule
+  @Container
   public static GenericContainer<?> azurite =
-      new GenericContainer<>(
-              DockerImageName.parse("mcr.microsoft.com/azure-storage/azurite:latest"))
-          .withExposedPorts(10001, 10002, 10000);
+          new GenericContainer<>(
+                  DockerImageName.parse("mcr.microsoft.com/azure-storage/azurite:latest"))
+                  .withExposedPorts(10001, 10002, 10000);
 
   Logger logger = Logger.getLogger("testlogging");
 
   String storageConnectionString =
-      String.format(
-          "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://%s:%s/devstoreaccount1;QueueEndpoint=http://%s:%s/devstoreaccount1;BlobEndpoint=http://%s:%s/devstoreaccount1",
+          String.format(
+                  "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://%s:%s/devstoreaccount1;QueueEndpoint=http://%s:%s/devstoreaccount1;BlobEndpoint=http://%s:%s/devstoreaccount1",
           azurite.getContainerIpAddress(),
           azurite.getMappedPort(10002),
           azurite.getContainerIpAddress(),
@@ -173,7 +164,6 @@ class DebtPositionServiceIntegrationTest {
         debtPositionEntity.setPaReferentEmail("paReferentEmail");
         debtPositionEntity.setPaReferentName("paReferentName");
         debtPositionEntity.setDebtorIdFiscalCode("debtorIdFiscalCode");
-        debtPositionEntity.setPaymentNoticeNumber("paymentNoticeNumber");
         debtPositionEntity.setNote("note");
 
         debtPositionEntity.setDebtorName("debtorName");
@@ -181,7 +171,7 @@ class DebtPositionServiceIntegrationTest {
         debtPositionEntity.setAmount("amount"); // Long
 
         // generated
-        debtPositionEntity.setIuv("iub");
+        debtPositionEntity.setPaymentNoticeNumber("paymentNoticeNumber");
         debtPositionEntity.setIupd("iudp");
 
         // EC config
