@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.canoneunico</groupId>
     <artifactId>canone-unico</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
 
     <name>Azure Canone Unico Fn</name>
