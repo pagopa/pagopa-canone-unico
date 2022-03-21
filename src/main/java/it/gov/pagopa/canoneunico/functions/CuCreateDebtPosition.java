@@ -38,11 +38,6 @@ public class CuCreateDebtPosition {
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
-
-            // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
-            //debtPositions.getRows()
-            //        .parallelStream()
-            //        .forEach(row -> createDebtPosition(debtPositions.getCsvFilename(), logger, row));
             
             // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
             debtPositions.getRows()
