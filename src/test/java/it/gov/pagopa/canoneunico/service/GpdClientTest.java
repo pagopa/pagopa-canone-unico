@@ -23,4 +23,11 @@ class GpdClientTest {
         var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build());
         assertFalse(result);
     }
+    
+    @Test
+    void publishDebtPositionError() {
+        Logger logger = Logger.getLogger("testlogging");
+        var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd");
+        assertFalse(result);
+    }
 }

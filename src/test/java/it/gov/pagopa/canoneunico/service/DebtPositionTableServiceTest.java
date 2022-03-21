@@ -42,7 +42,8 @@ class DebtPositionTableServiceTest {
         tableService.batchInsert(List.of(entity));
         tableService.updateEntity("csv", DebtPositionRowMessage.builder()
                         .id("1")
-                        .fiscalCode("A")
+                        .paIdFiscalCode("PAFISCALCODE")
+                        .debtorIdFiscalCode("DEBTORFISCALCODE")
                         .build(),
                 true);
         var res = tableService.getEntity("csv", "1");
