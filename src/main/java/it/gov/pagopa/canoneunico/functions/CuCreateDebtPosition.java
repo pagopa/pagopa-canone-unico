@@ -1,9 +1,14 @@
 package it.gov.pagopa.canoneunico.functions;
 
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.QueueTrigger;
+
 import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
 import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
 import it.gov.pagopa.canoneunico.model.PaymentOptionModel;
@@ -11,12 +16,6 @@ import it.gov.pagopa.canoneunico.model.PaymentPositionModel;
 import it.gov.pagopa.canoneunico.model.Transfer;
 import it.gov.pagopa.canoneunico.service.DebtPositionTableService;
 import it.gov.pagopa.canoneunico.service.GpdClient;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure Queue trigger.
@@ -83,7 +82,6 @@ public class CuCreateDebtPosition {
                 .fullName(row.getDebtorName())
                 .email(row.getDebtorEmail())
                 .companyName(row.getCompanyName())
-                .validityDate(LocalDateTime.now().plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .paymentOption(List.of(PaymentOptionModel.builder()
                         .iuv(row.getIuv())
                         .amount(row.getAmount())
