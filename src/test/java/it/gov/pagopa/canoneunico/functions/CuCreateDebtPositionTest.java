@@ -54,7 +54,8 @@ class CuCreateDebtPositionTest {
                 .csvFilename("csv")
                 .rows(List.of(DebtPositionRowMessage.builder()
                         .amount(100L)
-                        .fiscalCode("A")
+                        .paIdFiscalCode("PAFISCALCODE")
+                        .debtorIdFiscalCode("DEBTORFISCALCODE")
                         .build()))
                 .build());
         function.run(message, context);
