@@ -49,7 +49,7 @@ class CuCreateDebtPositionTest {
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
         when(gpdClient.createDebtPosition(any(), any(), any())).thenReturn(true);
-        doReturn(tableService).when(function).getDebtPositionService(logger);
+        doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
                 .csvFilename("csv")
@@ -70,7 +70,7 @@ class CuCreateDebtPositionTest {
 
         // Asserts
         verify(function, times(2)).getGpdClientInstance();
-        verify(function, times(1)).getDebtPositionService(logger);
+        verify(function, times(1)).getDebtPositionTableService(logger);
         verify(gpdClient, times(1)).createDebtPosition(any(), any(), any());
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any());
         verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean());
