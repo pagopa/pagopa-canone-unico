@@ -442,7 +442,8 @@ public class CuCsvService {
 			row.setAmount(Long.parseLong(e.getAmount()));
 			row.setIuv(e.getPaymentNoticeNumber());
 			row.setIupd(e.getIupd());
-			row.setFiscalCode(e.getDebtorIdFiscalCode());
+			row.setPaIdFiscalCode(e.getPaIdFiscalCode());
+			row.setDebtorIdFiscalCode(e.getDebtorIdFiscalCode());
 			row.setCompanyName(e.getCompanyName());
 			row.setIban(e.getIban());
 			debtPositionMsgs.add(row);

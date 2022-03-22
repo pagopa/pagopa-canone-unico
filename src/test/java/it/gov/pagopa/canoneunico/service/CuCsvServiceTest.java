@@ -367,7 +367,8 @@ class CuCsvServiceTest {
         r.setAmount(0L);
         r.setIuv("iuv");
         r.setIupd("iupd");
-        r.setFiscalCode("fiscalcode");
+        r.setPaIdFiscalCode("paIdFiscalCode");
+        r.setDebtorIdFiscalCode("debtorIdFiscalCode");
         r.setCompanyName("companyname");
         r.setIban("iban");
         rows.add(r);

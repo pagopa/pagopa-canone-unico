@@ -15,6 +15,7 @@ public class DebtPositionRowMessage {
     private String id;
     private String debtorName;
     private String debtorEmail;
+    private String debtorIdFiscalCode;
     private Long amount;
 
     // generated
@@ -22,7 +23,7 @@ public class DebtPositionRowMessage {
     private String iupd;
 
     // EC config
-    private String fiscalCode;
+    private String paIdFiscalCode;
     private String companyName;
     private String iban;
 
