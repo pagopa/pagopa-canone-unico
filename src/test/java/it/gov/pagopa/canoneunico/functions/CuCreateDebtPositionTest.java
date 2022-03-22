@@ -16,6 +16,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.logging.Logger;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -75,6 +76,20 @@ class CuCreateDebtPositionTest {
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any());
         verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean());
 
+    }
+
+    @Test
+    void getGpdClientInstance() {
+    	GpdClient client = function.getGpdClientInstance();
+    	assertNotNull(client);
+    }
+
+    @Test
+    void getDebtPositionService() {
+    	// general var
+        Logger logger = Logger.getLogger("testlogging");
+    	DebtPositionTableService tableService = function.getDebtPositionTableService(logger);
+    	assertNotNull(tableService);
     }
 
 }
