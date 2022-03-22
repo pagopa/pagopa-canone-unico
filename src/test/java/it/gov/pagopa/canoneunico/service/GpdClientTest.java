@@ -45,7 +45,7 @@ class GpdClientTest {
     	
     	Field host = gpdClient.getClass().getDeclaredField("gpdHost");
     	host.setAccessible(true); // Suppress Java language access checking
-    	host.set(gpdClient, "http://localhost:8080/");
+    	host.set(gpdClient, "http://localhost:8080");
     	
     	var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build());
     	assertFalse(result);
@@ -64,7 +64,7 @@ class GpdClientTest {
     	
     	Field host = gpdClient.getClass().getDeclaredField("gpdHost");
     	host.setAccessible(true); // Suppress Java language access checking
-    	host.set(gpdClient, "http://localhost:8080/");
+    	host.set(gpdClient, "http://localhost:8080");
     	
     	var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd");
     	assertFalse(result);

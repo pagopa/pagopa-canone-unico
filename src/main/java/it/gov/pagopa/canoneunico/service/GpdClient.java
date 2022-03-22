@@ -50,7 +50,7 @@ public class GpdClient {
     
     public boolean publishDebtPosition(Logger logger, String idPa, String iupd) {
         try {
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] Calling GPD service: " + idPa);
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] Calling GPD service: " + idPa +"; "+iupd);
             Response response = ClientBuilder.newClient()
                     .register(JacksonJaxbJsonProvider.class)
                     .target(gpdHost + String.format(PUBLISH_DEBT_POSITIONS, idPa, iupd))
