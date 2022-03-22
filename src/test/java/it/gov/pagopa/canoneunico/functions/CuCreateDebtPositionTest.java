@@ -16,6 +16,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.logging.Logger;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -48,21 +49,47 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
+        when(gpdClient.createDebtPosition(any(), any(), any())).thenReturn(true);
         doReturn(tableService).when(function).getDebtPositionService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
                 .csvFilename("csv")
                 .rows(List.of(DebtPositionRowMessage.builder()
+                		.id("001")
                         .amount(100L)
-                        .fiscalCode("A")
+                        .iuv("IUV")
+                        .iupd("IUPD")
+                        .paIdFiscalCode("PAFISCALCODE")
+                        .debtorIdFiscalCode("DEBTORFISCALCODE")
+                        .debtorName("DEBTORNAME")
+                        .debtorEmail("DEBTOREMAIL")
+                        .companyName("COMPANY")
+                        .iban("IBAN")
                         .build()))
                 .build());
         function.run(message, context);
 
         // Asserts
+        verify(function, times(2)).getGpdClientInstance();
+        verify(function, times(1)).getDebtPositionService(logger);
         verify(gpdClient, times(1)).createDebtPosition(any(), any(), any());
+        verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any());
         verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean());
 
+    }
+    
+    @Test
+    void getGpdClientInstance() {
+    	GpdClient client = function.getGpdClientInstance();
+    	assertNotNull(client);
+    }
+    
+    @Test
+    void getDebtPositionService() {
+    	// general var
+        Logger logger = Logger.getLogger("testlogging");
+    	DebtPositionTableService tableService = function.getDebtPositionService(logger);
+    	assertNotNull(tableService);
     }
 
 }
