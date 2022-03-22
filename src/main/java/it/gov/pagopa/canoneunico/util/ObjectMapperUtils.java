@@ -1,15 +1,13 @@
 package it.gov.pagopa.canoneunico.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
-import org.modelmapper.convention.MatchingStrategies;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ObjectMapperUtils {
 
@@ -71,10 +69,10 @@ public class ObjectMapperUtils {
         modelMapper.map(source, destination);
         return destination;
     }
-    
+
     public static String writeValueAsString(Object value) throws JsonProcessingException {
-    	return objectMapper.writeValueAsString(value);
+        return objectMapper.writeValueAsString(value);
     }
-    
-    
+
+
 }

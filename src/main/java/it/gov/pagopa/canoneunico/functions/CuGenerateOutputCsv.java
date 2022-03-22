@@ -18,21 +18,23 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/** Azure Functions with Timer trigger. */
+/**
+ * Azure Functions with Timer trigger.
+ */
 public class CuGenerateOutputCsv {
 
-  private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-  private String debtPositionsTable = System.getenv("DEBT_POSITIONS_TABLE");
-  private String containerBlobIn = System.getenv("INPUT_CSV_BLOB");
-  private String containerBlobOut = System.getenv("OUTPUT_CSV_BLOB");
+  private final String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
+  private final String debtPositionsTable = System.getenv("DEBT_POSITIONS_TABLE");
+  private final String containerBlobIn = System.getenv("INPUT_CSV_BLOB");
+  private final String containerBlobOut = System.getenv("OUTPUT_CSV_BLOB");
 
   /** This function will be invoked periodically according to the specified schedule. */
 
   @FunctionName("CuGenerateOutputCsvBatchFunction")
   public void run(
-      @TimerTrigger(name = "CuGenerateOutputCsvBatchTrigger", schedule = "%NCRON_SCHEDULE_BATCH%")
-          String timerInfo,
-      final ExecutionContext context) {
+          @TimerTrigger(name = "CuGenerateOutputCsvBatchTrigger", schedule = "%NCRON_SCHEDULE_BATCH%")
+                  String timerInfo,
+          final ExecutionContext context) {
 
     Logger logger = context.getLogger();
 
@@ -44,7 +46,7 @@ public class CuGenerateOutputCsv {
 
     List<String> csvFileNamePks = debtPositionService.getCsvFilePk();
 
-    List<List<List<String>>> data = null;
+    List<List<List<String>>> data;
     try {
       data = debtPositionService.getDebtPositionListByPk(csvFileNamePks);
 

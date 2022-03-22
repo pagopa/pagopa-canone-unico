@@ -16,7 +16,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -50,12 +50,13 @@ class CuCreateDebtPositionTest {
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
         when(gpdClient.createDebtPosition(any(), any(), any())).thenReturn(true);
+        when(gpdClient.publishDebtPosition(any(), any(), any())).thenReturn(true);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
                 .csvFilename("csv")
                 .rows(List.of(DebtPositionRowMessage.builder()
-                		.id("001")
+                        .id("001")
                         .amount(100L)
                         .iuv("IUV")
                         .iupd("IUPD")
@@ -65,6 +66,7 @@ class CuCreateDebtPositionTest {
                         .debtorEmail("DEBTOREMAIL")
                         .companyName("COMPANY")
                         .iban("IBAN")
+                        .retryAction("NONE")
                         .build()))
                 .build());
         function.run(message, context);
@@ -80,16 +82,16 @@ class CuCreateDebtPositionTest {
 
     @Test
     void getGpdClientInstance() {
-    	GpdClient client = function.getGpdClientInstance();
-    	assertNotNull(client);
+        GpdClient client = function.getGpdClientInstance();
+        assertNotNull(client);
     }
 
     @Test
     void getDebtPositionService() {
-    	// general var
+        // general var
         Logger logger = Logger.getLogger("testlogging");
-    	DebtPositionTableService tableService = function.getDebtPositionTableService(logger);
-    	assertNotNull(tableService);
+        DebtPositionTableService tableService = function.getDebtPositionTableService(logger);
+        assertNotNull(tableService);
     }
 
 }
