@@ -102,7 +102,7 @@ public class DebtPositionService {
                         TableQuery.combineFilters(
                                 partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
 
-                Boolean isExistInsertedOrError = Boolean.FALSE;
+                boolean isExistInsertedOrError;
 
                 try {
                 isExistInsertedOrError =
