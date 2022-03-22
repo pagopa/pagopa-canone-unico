@@ -16,15 +16,23 @@ import java.util.logging.Logger;
 
 public class DebtPositionQueueService {
 
-    private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
-    private final String queueName = System.getenv("DEBT_POSITIONS_QUEUE");
-    private final String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private final Integer timeToLiveInSeconds = Integer.valueOf(System.getenv("QUEUE_TIME_TO_LIVE"));
-    private final Integer initialVisibilityDelayInSeconds = Integer.valueOf(System.getenv("QUEUE_DELAY"));
+    private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+    private String queueName = System.getenv("DEBT_POSITIONS_QUEUE");
+    private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
+    private final String timeToLiveInSeconds = System.getenv("QUEUE_TIME_TO_LIVE");
+    private final String initialVisibilityDelayInSeconds = System.getenv("QUEUE_DELAY");
 
     private final Logger logger;
 
     public DebtPositionQueueService(Logger logger) {
+        this.logger = logger;
+        createEnv();
+    }
+
+    public DebtPositionQueueService(String storageConnectionString, String queueName, boolean debugAzurite, Logger logger) {
+        this.storageConnectionString = storageConnectionString;
+        this.queueName = queueName;
+        this.debugAzurite = debugAzurite;
         this.logger = logger;
         createEnv();
     }
@@ -41,7 +49,9 @@ public class DebtPositionQueueService {
                     createCloudQueueClient()
                     .getQueueReference(queueName);
 
-            queue.addMessage(new CloudQueueMessage(ObjectMapperUtils.writeValueAsString(msg)), timeToLiveInSeconds, initialVisibilityDelayInSeconds, null, null);
+            int timeToLive = timeToLiveInSeconds != null ? Integer.parseInt(timeToLiveInSeconds) : 60;
+            int initialVisibilityDelay = initialVisibilityDelayInSeconds != null ? Integer.parseInt(initialVisibilityDelayInSeconds) : 0;
+            queue.addMessage(new CloudQueueMessage(ObjectMapperUtils.writeValueAsString(msg)), timeToLive, initialVisibilityDelay, null, null);
         } catch (URISyntaxException | StorageException | InvalidKeyException | JsonProcessingException e) {
             this.logger.log(Level.SEVERE, () -> "[DebtPositionQueueService ERROR] Error " + e);
         }
