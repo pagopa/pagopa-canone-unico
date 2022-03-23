@@ -33,6 +33,7 @@ public class DebtPositionService {
     private static final String CSV_HEAD =
             "id;status;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
     private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
+    public static final String STATUS = "Status";
     private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
     private final String storageConnectionString;
     private final String debtPositionsTable;
@@ -77,33 +78,33 @@ public class DebtPositionService {
     return pks.stream()
         .map(
             pk -> {
-              List<List<String>> rowsList = new ArrayList<>();
+                List<List<String>> rowsList = new ArrayList<>();
 
-              String partitionFilter =
-                  TableQuery.generateFilterCondition(
-                      "PartitionKey", TableQuery.QueryComparisons.EQUAL, pk);
-              String stateFilterCreated =
-                  TableQuery.generateFilterCondition(
-                      "Status", TableQuery.QueryComparisons.EQUAL, Status.CREATED.toString());
-              String stateFilterInserted =
-                  TableQuery.generateFilterCondition(
-                      "Status", TableQuery.QueryComparisons.EQUAL, Status.INSERTED.toString());
-              String stateFilterError =
-                  TableQuery.generateFilterCondition(
-                      "Status", TableQuery.QueryComparisons.EQUAL, Status.ERROR.toString());
-              String combinedFilterCreated =
-                  TableQuery.combineFilters(
-                      partitionFilter, TableQuery.Operators.AND, stateFilterCreated);
-              String combinedFilterInsertedOrError =
-                  TableQuery.combineFilters(
-                      stateFilterInserted, TableQuery.Operators.OR, stateFilterError);
-              String combinedNotOk =
-                  TableQuery.combineFilters(
-                      partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
+                String partitionFilter =
+                        TableQuery.generateFilterCondition(
+                                "PartitionKey", TableQuery.QueryComparisons.EQUAL, pk);
+                String stateFilterCreated =
+                        TableQuery.generateFilterCondition(
+                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.CREATED.toString());
+                String stateFilterInserted =
+                        TableQuery.generateFilterCondition(
+                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.INSERTED.toString());
+                String stateFilterError =
+                        TableQuery.generateFilterCondition(
+                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.ERROR.toString());
+                String combinedFilterCreated =
+                        TableQuery.combineFilters(
+                                partitionFilter, TableQuery.Operators.AND, stateFilterCreated);
+                String combinedFilterInsertedOrError =
+                        TableQuery.combineFilters(
+                                stateFilterInserted, TableQuery.Operators.OR, stateFilterError);
+                String combinedNotOk =
+                        TableQuery.combineFilters(
+                                partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
 
-              Boolean isExistInsertedOrError = Boolean.FALSE;
+                boolean isExistInsertedOrError;
 
-              try {
+                try {
                 isExistInsertedOrError =
                     (table.execute(TableQuery.from(DebtPositionEntity.class).where(combinedNotOk)))
                         .iterator()
@@ -191,8 +192,8 @@ public class DebtPositionService {
       azuriteStorageUtil.createBlob(containerBlobIn);
       azuriteStorageUtil.createBlob(containerBlobOut);
     } catch (Exception e) {
-      this.logger.severe(
-          String.format("[AzureStorage] Problem to create table or queue: %s", e.getMessage()));
+        this.logger.severe(
+                String.format("[AzureStorage] Problem to create table: %s", e.getMessage()));
     }
   }
 }

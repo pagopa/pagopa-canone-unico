@@ -47,7 +47,7 @@ public class GpdClient {
             return false;
         }
     }
-    
+
     public boolean publishDebtPosition(Logger logger, String idPa, String iupd) {
         try {
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] Calling GPD service: " + idPa +"; "+iupd);

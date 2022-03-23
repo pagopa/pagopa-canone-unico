@@ -17,4 +17,7 @@ public class DebtPositionMessage {
     private String csvFilename;
     private List<DebtPositionRowMessage> rows;
 
+    // retry
+    private Integer retryCount;
+
 }
