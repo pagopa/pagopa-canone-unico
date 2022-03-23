@@ -27,4 +27,6 @@ public class DebtPositionRowMessage {
     private String companyName;
     private String iban;
 
+    // retry
+    private String retryAction; // CREATE | PUBLISH
 }
