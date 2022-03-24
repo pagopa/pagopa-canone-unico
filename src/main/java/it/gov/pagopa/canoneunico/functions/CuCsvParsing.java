@@ -99,7 +99,7 @@ public class CuCsvParsing {
 				long startTime1 = System.currentTimeMillis();
     			String errorCSV = csvService.generateErrorCsv(converted, csvValidation);
 				long endTime1 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] generateErrorCsv executed in [%s] ms", (endTime - startTime)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] generateErrorCsv executed in [%s] ms", (endTime1 - startTime1)));
 
 				// Create file in error blob storage
 				long startTime2 = System.currentTimeMillis();
