@@ -53,7 +53,6 @@ public class CuCsvParsing {
 
     		// string CSV File 
     		String converted = new String(content, StandardCharsets.UTF_8);
-    		logger.log(Level.INFO, () -> converted);
 
     		// parse CSV file to create an object based on 'PaymentNotice' bean
 			long startTime = System.currentTimeMillis();
@@ -62,7 +61,7 @@ public class CuCsvParsing {
     		// Check if CSV is valid
     		DebtPositionValidationCsv csvValidation = CsvValidation.checkCsvIsValid(fileName, csvToBean);
 			long endTime = System.currentTimeMillis();
-			logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] parseCsv and checkCsvIsValid executed in [%s] ms", (endTime - startTime)));
+			logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] parseCsv and checkCsvIsValid executed in [%s] ms", fileName, (endTime - startTime)));
 
     		if (csvValidation.getErrorRows().isEmpty()) {
     			// If valid file -> save on table and write on queue
@@ -73,17 +72,17 @@ public class CuCsvParsing {
 				long startTime1 = System.currentTimeMillis();
 				List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileName, payments);
 				long endTime1 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] saveDebtPosition executed in [%s] ms", (endTime1 - startTime1)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] saveDebtPositionTable executed in [%s] ms", fileName, (endTime1 - startTime1)));
 
 				// push in queue
 				long startTime2 = System.currentTimeMillis();
 				csvService.pushDebtPosition(fileName, savedEntities);
 				long endTime2 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] saveDebtPosition executed in [%s] ms", (endTime2 - startTime2)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] saveDebtPositionQueue executed in [%s] ms", fileName, (endTime2 - startTime2)));
 
 				logger.log(Level.INFO, () -> String.format(
-    					"[CuCsvParsingFunction END] execution started at [%s] and ended at [%s] - fileName [%s]",
-    					start, LocalDateTime.now(), fileName));
+    					"[CuCsvParsingFunction END] [%s] execution started at [%s] and ended at [%s]",
+						fileName, start, LocalDateTime.now()));
     		}
     		else {
     			// If not valid file -> write log error, save on 'error' blob space and delete from 'input' blob space
@@ -99,29 +98,29 @@ public class CuCsvParsing {
 				long startTime1 = System.currentTimeMillis();
     			String errorCSV = csvService.generateErrorCsv(converted, csvValidation);
 				long endTime1 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] generateErrorCsv executed in [%s] ms", (endTime1 - startTime1)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] generateErrorCsv executed in [%s] ms", fileName, (endTime1 - startTime1)));
 
 				// Create file in error blob storage
 				long startTime2 = System.currentTimeMillis();
 				csvService.uploadCsv(fileName, errorCSV);
 				long endTime2 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] uploadCsv executed in [%s] ms", (endTime2 - startTime2)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] uploadCsv executed in [%s] ms", fileName, (endTime2 - startTime2)));
 
 				// Delete the original file from input blob storage
 				long startTime3 = System.currentTimeMillis();
 				csvService.deleteCsv(fileName);
 				long endTime3 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] deleteCsv executed in [%s] ms", (endTime3 - startTime3)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] deleteCsv executed in [%s] ms", fileName, (endTime3 - startTime3)));
 
 
 				logger.log(Level.INFO, () -> String.format(
-    					"[CuCsvParsingFunction END] execution started at [%s] and ended at [%s] - fileName [%s]",
-    					start, LocalDateTime.now(), fileName));
+    					"[CuCsvParsingFunction END] [%s] execution started at [%s] and ended at [%s]",
+						fileName, start, LocalDateTime.now()));
     		}
     	} catch (Exception e) {
 			logger.log(Level.SEVERE, () -> String.format(
-					"[CuCsvParsingFunction ERROR] Generic Error: error msg = %s - cause = %s - fileName %s",
-					e.getMessage(), e.getCause(), fileName));
+					"[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s",
+					fileName, e.getMessage(), e.getCause()));
 		} 
 
     }

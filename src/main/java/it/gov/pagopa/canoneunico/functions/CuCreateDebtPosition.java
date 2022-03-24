@@ -38,7 +38,6 @@ public class CuCreateDebtPosition {
         Logger logger = context.getLogger();
         logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START] new message " + message);
 
-
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
@@ -52,15 +51,15 @@ public class CuCreateDebtPosition {
                     .collect(Collectors.toList());
 
             long endTime = System.currentTimeMillis();
-            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms", (endTime - startTime)));
+            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms message: %s", (endTime - startTime), message));
 
             if (!failed.isEmpty()) {
                 handleFailedRows(logger, debtPositions, failed);
             }
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END]  processed a message " + message);
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END] processed a message " + message);
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR] Generic Error " + e.getMessage() + " "
-                    + e.getCause() + " - message " + message);
+                    + e.getCause() + " - message: " + message);
         }
 
     }
