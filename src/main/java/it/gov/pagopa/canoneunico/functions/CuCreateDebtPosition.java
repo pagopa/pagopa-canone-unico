@@ -44,10 +44,15 @@ public class CuCreateDebtPosition {
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
 
             // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
+            long startTime = System.currentTimeMillis();
+
             var failed = debtPositions.getRows()
                     .parallelStream()
                     .filter(row -> !RetryStep.DONE.equals(createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row)))
                     .collect(Collectors.toList());
+
+            long endTime = System.currentTimeMillis();
+            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms", (endTime - startTime)));
 
             if (!failed.isEmpty()) {
                 handleFailedRows(logger, debtPositions, failed);
