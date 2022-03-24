@@ -54,6 +54,7 @@ public class CuCreateDebtPosition {
             logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms message: %s", (endTime - startTime), message));
 
             if (!failed.isEmpty()) {
+                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction] retry failed rows , message: %s", message));
                 handleFailedRows(logger, debtPositions, failed);
             }
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END] processed a message " + message);
