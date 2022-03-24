@@ -24,7 +24,7 @@ parser.add_argument('--path', metavar='PATH', type=str, nargs='?', help='directo
 parser.add_argument('--rows', metavar='ROWS', type=int, nargs='?', help='numbers of CSV rows to generate (default: 1)')
 parser.add_argument('--account-name', metavar='ACCOUNT_NAME', type=str, nargs='?',
                     help='Azure account name (default: pagopadcanoneunicosa)')
-parser.add_argument('--container_name', metavar='CONTAINER_NAME', type=str, nargs='?',
+parser.add_argument('--container-name', metavar='CONTAINER_NAME', type=str, nargs='?',
                     help='Azure container name (default: pagopadcanoneunicosaincsvcontainer)')
 args = parser.parse_args()
 
