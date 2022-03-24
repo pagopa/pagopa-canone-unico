@@ -20,12 +20,12 @@ Optional
 
 ```
 --account-name {name of storage account}
---container_name {name of the container}
+--container-name {name of the container}
 ```
 
 ### Examples
 
-`python3 ./blob_utils.py list --account-name pagopadcanoneunicosa --container_name pagopadcanoneunicosaincsvcontainer`
+`python3 ./blob_utils.py list --account-name pagopadcanoneunicosa --container-name pagopadcanoneunicosaincsvcontainer`
 
 ---
 
@@ -44,12 +44,12 @@ Optional
 ```
 --path {path where save the file}
 --account-name {name of storage account}
---container_name {name of the container}
+--container-name {name of the container}
 ```
 
 ### Examples
 
-`python3 ./blob_utils.py download --file filename.csv --path out --account-name pagopadcanoneunicosa --container_name pagopadcanoneunicosaincsvcontainer`
+`python3 ./blob_utils.py download --file filename.csv --path out --account-name pagopadcanoneunicosa --container-name pagopadcanoneunicosaincsvcontainer`
 
 ---
 
@@ -69,15 +69,15 @@ Optional
 --rows {numbers of rows to generate in the CSV}
 --path {local path where find the CSV}
 --account-name {name of storage account}
---container_name {name of the container}
+--container-name {name of the container}
 ```
 
 ### Examples
 
 - with auto generation of the file (with --rows parameter)
 
-`python3 ./blob_utils.py upload --file filename.csv --rows 5 --path in --account-name pagopadcanoneunicosa --container_name pagopadcanoneunicosaincsvcontainer`
+`python3 ./blob_utils.py upload --file filename.csv --rows 5 --path in --account-name pagopadcanoneunicosa --container-name pagopadcanoneunicosaincsvcontainer`
 
 - to upload an existing file (without --rows parameter)
 
-`python3 ./blob_utils.py upload --file filename.csv --path in --account-name pagopadcanoneunicosa --container_name pagopadcanoneunicosaincsvcontainer`
+`python3 ./blob_utils.py upload --file filename.csv --path in --account-name pagopadcanoneunicosa --container-name pagopadcanoneunicosaincsvcontainer`
