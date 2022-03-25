@@ -46,7 +46,6 @@ public class DebtPositionTableService {
      */
     public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status) {
 
-        this.logger.log(Level.INFO, "[DebtPositionTableService] start storing ");
 
         try {
             // get the table
@@ -61,7 +60,6 @@ public class DebtPositionTableService {
 
             table.execute(updateOperation);
 
-            this.logger.log(Level.INFO, "[DebtPositionTableService] storing completed");
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
             this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR] Error " + e);
         }
