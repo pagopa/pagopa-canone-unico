@@ -38,24 +38,29 @@ public class CuCreateDebtPosition {
         Logger logger = context.getLogger();
         logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START] new message " + message);
 
-
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
 
             // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
+            long startTime = System.currentTimeMillis();
+
             var failed = debtPositions.getRows()
                     .parallelStream()
                     .filter(row -> !RetryStep.DONE.equals(createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row)))
                     .collect(Collectors.toList());
 
+            long endTime = System.currentTimeMillis();
+            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms message: %s", (endTime - startTime), message));
+
             if (!failed.isEmpty()) {
+                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction] retry failed rows , message: %s", message));
                 handleFailedRows(logger, debtPositions, failed);
             }
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END]  processed a message " + message);
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END] processed a message " + message);
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR] Generic Error " + e.getMessage() + " "
-                    + e.getCause() + " - message " + message);
+                    + e.getCause() + " - message: " + message);
         }
 
     }

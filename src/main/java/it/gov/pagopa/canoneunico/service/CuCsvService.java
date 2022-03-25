@@ -249,7 +249,6 @@ public class CuCsvService {
     }
 
     public void checkIUVExistence(IuvEntity iuvEntity) throws InvalidKeyException, URISyntaxException, StorageException {
-        logger.log(Level.INFO, () -> "[CuCsvService] check iuv existence in table [" + iuvsTable + "]: " + iuvEntity);
         AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
         azuriteStorageUtil.createTable(iuvsTable);
 

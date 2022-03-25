@@ -136,6 +136,17 @@ class PayPaymentOptionHandler(tornado.web.RequestHandler):
         self.set_status(200)
         self.write(json.dumps(generate_payment_option(iuv, idpa)))
 
+class PublishPaymentOptionHandler(tornado.web.RequestHandler):
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')
+
+    def post(self, idpa, iuv):
+        print("request received")
+        print(f"{self.request}{self.request.body.decode()} - {idpa} - {iuv}")
+        self.set_status(200)
+        self.write(json.dumps(generate_payment_option(iuv, idpa)))
+
 
 class DebtpositionsHandler(tornado.web.RequestHandler):
 
@@ -145,12 +156,7 @@ class DebtpositionsHandler(tornado.web.RequestHandler):
     def post(self, idpa):
         print("request received")
         print(f"{self.request}{self.request.body.decode()} - {idpa}")
-        if idpa == "A":
-            print('A')
-            self.set_status(201)
-        else:
-            print('B')
-            self.set_status(404)
+        self.set_status(201)
         self.write(json.dumps({"iupd": "string"}))
 
 
@@ -158,6 +164,7 @@ def make_app():
     return tornado.web.Application([
         (r"/organizations", organizationsHandler),
         (r"/organizations/([^/]+)/debtpositions", DebtpositionsHandler),
+        (r"/organizations/([^/]+)/debtpositions/([^/]+)/publish", PublishPaymentOptionHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)/pay", PayPaymentOptionHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)/transfers/([^/]+)/report", reportsHandler),
         (r"/organizations/([^/]+)/paymentoptions/([^/]+)", PaymentOptionHandler),

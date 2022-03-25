@@ -6,6 +6,7 @@ import it.gov.pagopa.canoneunico.model.PaymentPositionModel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
@@ -32,14 +33,15 @@ public class GpdClient {
     public boolean createDebtPosition(Logger logger, String idPa, PaymentPositionModel body) {
         try {
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - createDebtPosition] Calling GPD service: " + idPa);
-            Response response = ClientBuilder.newClient()
+            Client client = ClientBuilder.newClient();
+            Response response = client
                     .register(JacksonJaxbJsonProvider.class)
                     .target(gpdHost + String.format(POST_DEBT_POSITIONS, idPa))
                     .request()
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.json(body));
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - createDebtPosition] HTTP status: " + response.getStatus()
-                    + ", Body: " + response.getEntity());
+            client.close();
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - createDebtPosition] HTTP status: " + response.getStatus());
             return response.getStatus() == HttpStatus.CREATED.value();
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR - createDebtPosition] error during the GPD call " + e.getMessage() + " "
@@ -51,14 +53,15 @@ public class GpdClient {
     public boolean publishDebtPosition(Logger logger, String idPa, String iupd) {
         try {
             logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] Calling GPD service: " + idPa +"; "+iupd);
-            Response response = ClientBuilder.newClient()
+            Client client = ClientBuilder.newClient();
+            Response response = client
                     .register(JacksonJaxbJsonProvider.class)
                     .target(gpdHost + String.format(PUBLISH_DEBT_POSITIONS, idPa, iupd))
                     .request()
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.json(null));
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] HTTP status: " + response.getStatus()
-                    + ", Body: " + response.getEntity());
+            client.close();
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition] HTTP status: " + response.getStatus());
             return response.getStatus() == HttpStatus.OK.value();
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR - publishDebtPosition] error during the GPD call " + e.getMessage() + " "
