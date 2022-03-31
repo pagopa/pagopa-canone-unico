@@ -43,8 +43,9 @@ public class DebtPositionTableService {
      * @param filename     used as partition key
      * @param debtPosition elem of the message
      * @param status       to update
+     * @param requestId
      */
-    public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status) {
+    public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status, String requestId) {
 
 
         try {
@@ -61,7 +62,7 @@ public class DebtPositionTableService {
             table.execute(updateOperation);
 
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR] Error " + e);
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR][requestId=" + requestId + "] Error " + e);
         }
     }
 
