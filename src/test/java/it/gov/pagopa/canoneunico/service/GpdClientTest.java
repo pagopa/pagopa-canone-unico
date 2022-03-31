@@ -27,6 +27,7 @@ class GpdClientTest {
 
     @Spy
     GpdClient gpdClient;
+    private final String requestId = "111";
 
     @Test
     void getInstance() {
@@ -37,7 +38,7 @@ class GpdClientTest {
     @Test
     void createDebtPositionError() {
         Logger logger = Logger.getLogger("testlogging");
-        var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build());
+        var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
         assertFalse(result);
     }
 
@@ -49,7 +50,7 @@ class GpdClientTest {
         host.setAccessible(true); // Suppress Java language access checking
         host.set(gpdClient, "http://localhost:8080");
 
-        var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build());
+        var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
         assertFalse(result);
     }
 
@@ -71,10 +72,10 @@ class GpdClientTest {
         host.setAccessible(true); // Suppress Java language access checking
         host.set(gpdClient, "http://localhost:8881");
 
-        gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build());
+        gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
 
         verify(postRequestedFor(urlEqualTo("/organizations/A/debtpositions")));
-        assertEquals(true, gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build()));
+        assertEquals(true, gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId));
 
         wireMockServer.stop();
     }
@@ -82,7 +83,7 @@ class GpdClientTest {
     @Test
     void publishDebtPositionError() {
         Logger logger = Logger.getLogger("testlogging");
-        var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd");
+        var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
         assertFalse(result);
     }
 
@@ -94,7 +95,7 @@ class GpdClientTest {
         host.setAccessible(true); // Suppress Java language access checking
         host.set(gpdClient, "http://localhost:8080");
 
-        var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd");
+        var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
         assertFalse(result);
     }
 
@@ -113,10 +114,10 @@ class GpdClientTest {
         host.setAccessible(true); // Suppress Java language access checking
         host.set(gpdClient, "http://localhost:8882");
 
-        gpdClient.publishDebtPosition(logger, "idPa", "iupd");
+        gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
 
         verify(postRequestedFor(urlEqualTo("/organizations/idPa/debtpositions/iupd/publish")));
-        assertEquals(true, gpdClient.publishDebtPosition(logger, "idPa", "iupd"));
+        assertEquals(true, gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId));
 
         wireMockServer.stop();
     }
