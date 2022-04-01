@@ -36,30 +36,32 @@ public class CuCreateDebtPosition {
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
-        logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START] new message " + message);
+        logger.log(Level.CONFIG, () -> "[CuCreateDebtPositionFunction][id=" + context.getInvocationId() + "] new message " + message);
 
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START][id=" + context.getInvocationId() + "] create debt position of the file: " + debtPositions.getCsvFilename());
+
 
             // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
             long startTime = System.currentTimeMillis();
 
             var failed = debtPositions.getRows()
                     .parallelStream()
-                    .filter(row -> !RetryStep.DONE.equals(createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row)))
+                    .filter(row -> !RetryStep.DONE.equals(createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row, context.getInvocationId())))
                     .collect(Collectors.toList());
 
             long endTime = System.currentTimeMillis();
-            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction] createAndPublishDebtPosition executed in [%s] ms message: %s", (endTime - startTime), message));
+            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction][id=%s] createAndPublishDebtPosition executed in [%s] ms", context.getInvocationId(), (endTime - startTime)));
 
             if (!failed.isEmpty()) {
                 logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction] retry failed rows , message: %s", message));
-                handleFailedRows(logger, debtPositions, failed);
+                handleFailedRows(logger, debtPositions, failed, context.getInvocationId());
             }
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END] processed a message " + message);
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END][id=" + context.getInvocationId() + "] processed a message");
         } catch (Exception e) {
-            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR] Generic Error " + e.getMessage() + " "
+            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR][id=" + context.getInvocationId() + "] Generic Error " + e.getMessage() + " "
                     + e.getCause() + " - message: " + message);
         }
 
@@ -69,11 +71,16 @@ public class CuCreateDebtPosition {
      * @param logger        for logging
      * @param debtPositions message
      * @param failed        list of failed rows
+     * @param invocationId
      */
-    private void handleFailedRows(Logger logger, DebtPositionMessage debtPositions, List<DebtPositionRowMessage> failed) {
+    private void handleFailedRows(Logger logger, DebtPositionMessage debtPositions, List<DebtPositionRowMessage> failed, String invocationId) {
         int maxRetry = maxAttempts != null ? Integer.parseInt(maxAttempts) : 0;
         // retry
         if (debtPositions.getRetryCount() < maxRetry) {
+            failed.forEach(elem ->
+                    logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s] Retry iuv: %s", invocationId + ":" + elem.getId(), elem.getIuv()))
+            );
+
             // insert message in queue
             var queueService = getDebtPositionQueueService(logger);
             queueService.insertMessage(DebtPositionMessage.builder()
@@ -84,51 +91,57 @@ public class CuCreateDebtPosition {
 
         } else {
             // update with ERROR status
-            failed.forEach(row -> updateTable(debtPositions.getCsvFilename(), logger, row, false));
+            failed.forEach(row -> {
+                String requestId = invocationId + ":" + row.getId();
+                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s] Update entity with ERROR status", requestId));
+                updateTable(debtPositions.getCsvFilename(), logger, row, false, requestId);
+            });
         }
     }
 
     /**
      * calls GPD for the status and updates the elem status in the table
      *
-     * @param filename used as partition key
-     * @param logger   for logging
-     * @param row      element to process
+     * @param filename     used as partition key
+     * @param logger       for logging
+     * @param row          element to process
+     * @param invocationId
      */
 
-    private RetryStep createAndPublishDebtPosition(String filename, Logger logger, DebtPositionRowMessage row) {
-
+    private RetryStep createAndPublishDebtPosition(String filename, Logger logger, DebtPositionRowMessage row, String invocationId) {
+        String requestId = invocationId + ":" + row.getId();
+        logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "] filename:" + filename + " id:" + row.getId());
         switch (RetryStep.valueOf(row.getRetryAction())) {
             case NONE:
             case CREATE:
-                var statusCreate = this.createDebtPosition(logger, row);
+                var statusCreate = this.createDebtPosition(logger, row, requestId);
                 if (!statusCreate) {
                     row.setRetryAction(RetryStep.CREATE.name());
                     return RetryStep.CREATE;
                 }
             case PUBLISH:
-                var statusPublish = this.publishDebtPosition(logger, row);
+                var statusPublish = this.publishDebtPosition(logger, row, requestId);
                 if (!statusPublish) {
                     row.setRetryAction(RetryStep.PUBLISH.name());
                     return RetryStep.PUBLISH;
                 }
             default:
                 // update entity
-                logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
-                updateTable(filename, logger, row, true);
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
+                updateTable(filename, logger, row, true, requestId);
                 row.setRetryAction(RetryStep.DONE.name());
                 return RetryStep.DONE;
         }
 
     }
 
-    private void updateTable(String filename, Logger logger, DebtPositionRowMessage row, boolean status) {
+    private void updateTable(String filename, Logger logger, DebtPositionRowMessage row, boolean status, String requestId) {
         var tableService = getDebtPositionTableService(logger);
-        tableService.updateEntity(filename, row, status);
+        tableService.updateEntity(filename, row, status, requestId);
     }
 
 
-    private boolean createDebtPosition(Logger logger, DebtPositionRowMessage row) {
+    private boolean createDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
         // get status from GPD
         GpdClient gpdClient = this.getGpdClientInstance();
         PaymentPositionModel body = PaymentPositionModel.builder()
@@ -154,12 +167,12 @@ public class CuCreateDebtPosition {
                         .build()))
                 .build();
 
-        return gpdClient.createDebtPosition(logger, row.getPaIdFiscalCode(), body);
+        return gpdClient.createDebtPosition(logger, row.getPaIdFiscalCode(), body, requestId);
     }
 
-    private boolean publishDebtPosition(Logger logger, DebtPositionRowMessage row) {
+    private boolean publishDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
         GpdClient gpdClient = this.getGpdClientInstance();
-        return gpdClient.publishDebtPosition(logger, row.getPaIdFiscalCode(), row.getIupd());
+        return gpdClient.publishDebtPosition(logger, row.getPaIdFiscalCode(), row.getIupd(), requestId);
     }
 
     protected GpdClient getGpdClientInstance() {

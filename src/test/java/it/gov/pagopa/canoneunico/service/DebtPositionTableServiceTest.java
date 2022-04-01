@@ -45,7 +45,7 @@ class DebtPositionTableServiceTest {
                         .paIdFiscalCode("PAFISCALCODE")
                         .debtorIdFiscalCode("DEBTORFISCALCODE")
                         .build(),
-                true);
+                true, "1");
         var res = tableService.getEntity("csv", "1");
         assertEquals(Status.CREATED.name(), res.getStatus());
     }
