@@ -43,7 +43,6 @@ class CuCreateDebtPositionTest {
 
     @Mock
     DebtPositionQueueService queueService;
-    private final String requestId = "111";
 
 
     @Test
@@ -79,9 +78,9 @@ class CuCreateDebtPositionTest {
         // Asserts
         verify(function, times(2)).getGpdClientInstance();
         verify(function, times(1)).getDebtPositionTableService(logger);
-        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), requestId);
+        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), any());
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any(), any());
-        verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean(), requestId);
+        verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean(), any());
 
     }
 
@@ -93,7 +92,7 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), requestId)).thenReturn(true);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
         when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
@@ -119,9 +118,9 @@ class CuCreateDebtPositionTest {
         // Asserts
         verify(function, times(2)).getGpdClientInstance();
         verify(function, times(1)).getDebtPositionTableService(logger);
-        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), requestId);
+        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), any());
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any(), any());
-        verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean(), requestId);
+        verify(tableService, times(1)).updateEntity(anyString(), any(), anyBoolean(), any());
 
     }
 
@@ -133,7 +132,7 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), requestId)).thenReturn(true);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
         when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
         doReturn(queueService).when(function).getDebtPositionQueueService(logger);
 
@@ -159,7 +158,7 @@ class CuCreateDebtPositionTest {
         // Asserts
         verify(function, times(2)).getGpdClientInstance();
         verify(function, times(1)).getDebtPositionQueueService(logger);
-        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), requestId);
+        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), any());
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any(), any());
         verify(queueService, times(1)).insertMessage(any());
     }
