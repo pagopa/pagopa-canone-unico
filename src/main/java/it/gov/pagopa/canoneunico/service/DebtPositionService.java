@@ -58,93 +58,93 @@ public class DebtPositionService {
         // try to create Azure table and queue
         createEnv();
 
-        this.logger.info("[OrganizationsService] Processing organization list");
+        this.logger.fine("[DebtPositionService] Processing organization list");
 
-    BlobServiceClient blobServiceClient =
-        new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
+        BlobServiceClient blobServiceClient =
+                new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
 
-    BlobContainerClient client = blobServiceClient.getBlobContainerClient(this.containerBlobIn);
+        BlobContainerClient client = blobServiceClient.getBlobContainerClient(this.containerBlobIn);
 
-    return client.listBlobs().stream().map(BlobItem::getName).collect(Collectors.toList());
-  }
+        return client.listBlobs().stream().map(BlobItem::getName).collect(Collectors.toList());
+    }
 
-  public List<List<List<String>>> getDebtPositionListByPk(List<String> pks)
-      throws URISyntaxException, InvalidKeyException, StorageException {
-    CloudTable table =
-        CloudStorageAccount.parse(storageConnectionString)
-            .createCloudTableClient()
-            .getTableReference(this.debtPositionsTable);
+    public List<List<List<String>>> getDebtPositionListByPk(List<String> pks)
+            throws URISyntaxException, InvalidKeyException, StorageException {
+        CloudTable table =
+                CloudStorageAccount.parse(storageConnectionString)
+                        .createCloudTableClient()
+                        .getTableReference(this.debtPositionsTable);
 
-    return pks.stream()
-        .map(
-            pk -> {
-                List<List<String>> rowsList = new ArrayList<>();
+        return pks.stream()
+                .map(
+                        pk -> {
+                            List<List<String>> rowsList = new ArrayList<>();
 
-                String partitionFilter =
-                        TableQuery.generateFilterCondition(
-                                "PartitionKey", TableQuery.QueryComparisons.EQUAL, pk);
-                String stateFilterCreated =
-                        TableQuery.generateFilterCondition(
-                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.CREATED.toString());
-                String stateFilterInserted =
-                        TableQuery.generateFilterCondition(
-                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.INSERTED.toString());
-                String stateFilterError =
-                        TableQuery.generateFilterCondition(
-                                STATUS, TableQuery.QueryComparisons.EQUAL, Status.ERROR.toString());
-                String combinedFilterCreated =
-                        TableQuery.combineFilters(
-                                partitionFilter, TableQuery.Operators.AND, stateFilterCreated);
-                String combinedFilterInsertedOrError =
-                        TableQuery.combineFilters(
-                                stateFilterInserted, TableQuery.Operators.OR, stateFilterError);
-                String combinedNotOk =
-                        TableQuery.combineFilters(
-                                partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
+                            String partitionFilter =
+                                    TableQuery.generateFilterCondition(
+                                            "PartitionKey", TableQuery.QueryComparisons.EQUAL, pk);
+                            String stateFilterCreated =
+                                    TableQuery.generateFilterCondition(
+                                            STATUS, TableQuery.QueryComparisons.EQUAL, Status.CREATED.toString());
+                            String stateFilterInserted =
+                                    TableQuery.generateFilterCondition(
+                                            STATUS, TableQuery.QueryComparisons.EQUAL, Status.INSERTED.toString());
+                            String stateFilterError =
+                                    TableQuery.generateFilterCondition(
+                                            STATUS, TableQuery.QueryComparisons.EQUAL, Status.ERROR.toString());
+                            String combinedFilterCreated =
+                                    TableQuery.combineFilters(
+                                            partitionFilter, TableQuery.Operators.AND, stateFilterCreated);
+                            String combinedFilterInsertedOrError =
+                                    TableQuery.combineFilters(
+                                            stateFilterInserted, TableQuery.Operators.OR, stateFilterError);
+                            String combinedNotOk =
+                                    TableQuery.combineFilters(
+                                            partitionFilter, TableQuery.Operators.AND, combinedFilterInsertedOrError);
 
-                boolean isExistInsertedOrError;
+                            boolean isExistInsertedOrError;
 
-                try {
-                isExistInsertedOrError =
-                    (table.execute(TableQuery.from(DebtPositionEntity.class).where(combinedNotOk)))
-                        .iterator()
-                        .hasNext();
-              } catch (NoSuchElementException exception) {
-                return rowsList;
-              }
+                            try {
+                                isExistInsertedOrError =
+                                        (table.execute(TableQuery.from(DebtPositionEntity.class).where(combinedNotOk)))
+                                                .iterator()
+                                                .hasNext();
+                            } catch (NoSuchElementException exception) {
+                                return rowsList;
+                            }
 
-              // not all entity of pk are CREATED
-              if (Boolean.TRUE.equals(isExistInsertedOrError)) {
-                return rowsList;
-              }
+                            // not all entity of pk are CREATED
+                            if (Boolean.TRUE.equals(isExistInsertedOrError)) {
+                                return rowsList;
+                            }
 
-              for (DebtPositionEntity entity :
-                  table.execute(
-                      TableQuery.from(DebtPositionEntity.class).where(combinedFilterCreated))) {
-                  List<String> rowsItem = new ArrayList<>();
-                  Collections.addAll(
-                          rowsItem,
-                          deNull(entity.getRowKey()),
-                          deNull(entity.getStatus()),
-                          deNull(entity.getPaIdIstat()),
-                          deNull(entity.getPaIdCatasto()),
-                          deNull(entity.getPaIdFiscalCode()),
-                          deNull(entity.getPaIdCbill()),
-                          deNull(entity.getPaPecEmail()),
-                          deNull(entity.getPaReferentEmail()),
-                          deNull(entity.getPaReferentName()),
-                          deNull(entity.getAmount()),
-                          deNull(entity.getDebtorIdFiscalCode()),
-                          deNull(entity.getDebtorName()),
-                          deNull(entity.getDebtorEmail()),
-                          CU_AUX_DIGIT + entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
-                          deNull(entity.getNote()));
-                  rowsList.add(rowsItem);
-              }
-                return rowsList;
-            })
-            .collect(Collectors.toList());
-  }
+                            for (DebtPositionEntity entity :
+                                    table.execute(
+                                            TableQuery.from(DebtPositionEntity.class).where(combinedFilterCreated))) {
+                                List<String> rowsItem = new ArrayList<>();
+                                Collections.addAll(
+                                        rowsItem,
+                                        deNull(entity.getRowKey()),
+                                        deNull(entity.getStatus()),
+                                        deNull(entity.getPaIdIstat()),
+                                        deNull(entity.getPaIdCatasto()),
+                                        deNull(entity.getPaIdFiscalCode()),
+                                        deNull(entity.getPaIdCbill()),
+                                        deNull(entity.getPaPecEmail()),
+                                        deNull(entity.getPaReferentEmail()),
+                                        deNull(entity.getPaReferentName()),
+                                        deNull(entity.getAmount()),
+                                        deNull(entity.getDebtorIdFiscalCode()),
+                                        deNull(entity.getDebtorName()),
+                                        deNull(entity.getDebtorEmail()),
+                                        CU_AUX_DIGIT + entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
+                                        deNull(entity.getNote()));
+                                rowsList.add(rowsItem);
+                            }
+                            return rowsList;
+                        })
+                .collect(Collectors.toList());
+    }
 
     private String deNull(Object item) {
         return item != null ? item.toString() : "";
@@ -168,32 +168,32 @@ public class DebtPositionService {
                     .forEach(pw::println);
         }
 
-    blobClient.upload(BinaryData.fromStream(new FileInputStream(csvOutputFile)));
+        blobClient.upload(BinaryData.fromStream(new FileInputStream(csvOutputFile)));
 
-    logger.log(Level.INFO, () -> "uploadOutFile " + csvFileName + " done! ");
+        logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + csvFileName + "] Created output file in OutputStorage: " + csvOutputFile);
 
-    // delete blob in INPUT container
-    BlobContainerClient containerBlobInClient =
-        blobServiceClient.getBlobContainerClient(this.containerBlobIn);
-    BlobClient blobInClient = containerBlobInClient.getBlobClient(csvFileName);
-    blobInClient.delete();
-    logger.log(Level.INFO, () -> "delete file " + csvFileName + " done! ");
-  }
-
-  private String convertToCSV(List<String> data) {
-      return String.join(";", data);
-  }
-
-  private void createEnv() {
-    AzuriteStorageUtil azuriteStorageUtil =
-        new AzuriteStorageUtil(debugAzurite, storageConnectionString);
-    try {
-      azuriteStorageUtil.createTable(debtPositionsTable);
-      azuriteStorageUtil.createBlob(containerBlobIn);
-      azuriteStorageUtil.createBlob(containerBlobOut);
-    } catch (Exception e) {
-        this.logger.severe(
-                String.format("[AzureStorage] Problem to create table: %s", e.getMessage()));
+        // delete blob in INPUT container
+        BlobContainerClient containerBlobInClient =
+                blobServiceClient.getBlobContainerClient(this.containerBlobIn);
+        BlobClient blobInClient = containerBlobInClient.getBlobClient(csvFileName);
+        blobInClient.delete();
+        logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + csvFileName + "] Deleted file in InputStorage: " + csvFileName);
     }
-  }
+
+    private String convertToCSV(List<String> data) {
+        return String.join(";", data);
+    }
+
+    private void createEnv() {
+        AzuriteStorageUtil azuriteStorageUtil =
+                new AzuriteStorageUtil(debugAzurite, storageConnectionString);
+        try {
+            azuriteStorageUtil.createTable(debtPositionsTable);
+            azuriteStorageUtil.createBlob(containerBlobIn);
+            azuriteStorageUtil.createBlob(containerBlobOut);
+        } catch (Exception e) {
+            this.logger.severe(
+                    String.format("[AzureStorage] Problem to create table: %s", e.getMessage()));
+        }
+    }
 }

@@ -9,7 +9,7 @@
     "logLevel": {
       "default": "Information",
       "Host.Results": "Error",
-      "Function": "Information",
+      "Function": "Trace",
       "Host.Aggregator": "Trace"
     },
     "applicationInsights": {
