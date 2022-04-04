@@ -1,6 +1,7 @@
 package it.gov.pagopa.canoneunico.service;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.canoneunico.model.PaymentPositionModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -39,11 +39,11 @@ class GpdClientTest {
     void createDebtPositionError() {
         Logger logger = Logger.getLogger("testlogging");
         var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
-        assertFalse(result);
+        assertEquals(-1, result);
     }
 
     @Test
-    void createDebtPosition400() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    void createDebtPositionKO() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         Logger logger = Logger.getLogger("testlogging");
 
         Field host = gpdClient.getClass().getDeclaredField("gpdHost");
@@ -51,7 +51,7 @@ class GpdClientTest {
         host.set(gpdClient, "http://localhost:8080");
 
         var result = gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
-        assertFalse(result);
+        assertEquals(-1, result);
     }
 
     @Test
@@ -75,7 +75,7 @@ class GpdClientTest {
         gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId);
 
         verify(postRequestedFor(urlEqualTo("/organizations/A/debtpositions")));
-        assertEquals(true, gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId));
+        assertEquals(HttpStatus.CREATED.value(), gpdClient.createDebtPosition(logger, "A", PaymentPositionModel.builder().build(), requestId));
 
         wireMockServer.stop();
     }
@@ -84,11 +84,11 @@ class GpdClientTest {
     void publishDebtPositionError() {
         Logger logger = Logger.getLogger("testlogging");
         var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
-        assertFalse(result);
+        assertEquals(-1, result);
     }
 
     @Test
-    void publishDebtPosition400() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    void publishDebtPositionKO() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         Logger logger = Logger.getLogger("testlogging");
 
         Field host = gpdClient.getClass().getDeclaredField("gpdHost");
@@ -96,7 +96,7 @@ class GpdClientTest {
         host.set(gpdClient, "http://localhost:8080");
 
         var result = gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
-        assertFalse(result);
+        assertEquals(-1, result);
     }
 
     @Test
@@ -117,7 +117,7 @@ class GpdClientTest {
         gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId);
 
         verify(postRequestedFor(urlEqualTo("/organizations/idPa/debtpositions/iupd/publish")));
-        assertEquals(true, gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId));
+        assertEquals(HttpStatus.OK.value(), gpdClient.publishDebtPosition(logger, "idPa", "iupd", requestId));
 
         wireMockServer.stop();
     }

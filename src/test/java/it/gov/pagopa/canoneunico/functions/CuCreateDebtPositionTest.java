@@ -53,8 +53,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(true);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(200);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
@@ -92,8 +92,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(200);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
@@ -132,8 +132,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(500);
         doReturn(queueService).when(function).getDebtPositionQueueService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
