@@ -41,7 +41,7 @@ public class CuCreateDebtPosition {
         try {
             // map message in a model
             var debtPositions = new ObjectMapper().readValue(message, DebtPositionMessage.class);
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START][id=" + context.getInvocationId() + "] create debt position of the file: " + debtPositions.getCsvFilename());
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction START][id=" + context.getInvocationId() + "][" + debtPositions.getCsvFilename() + "] create debt position of the file");
 
 
             // in parallel, for each element in the message calls GPD for the status and updates the elem status in the table
@@ -53,13 +53,13 @@ public class CuCreateDebtPosition {
                     .collect(Collectors.toList());
 
             long endTime = System.currentTimeMillis();
-            logger.log(Level.INFO, () -> String.format("[CuCreateDebtPositionFunction][id=%s] createAndPublishDebtPosition executed in [%s] ms", context.getInvocationId(), (endTime - startTime)));
+            logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][id=%s][%s] createAndPublishDebtPosition executed in [%s] ms", context.getInvocationId(), debtPositions.getCsvFilename(), (endTime - startTime)));
 
             if (!failed.isEmpty()) {
-                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction] retry failed rows , message: %s", message));
+                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction][id=%s][%s] retry failed rows , message: %s", context.getInvocationId(), debtPositions.getCsvFilename(), message));
                 handleFailedRows(logger, debtPositions, failed, context.getInvocationId());
             }
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END][id=" + context.getInvocationId() + "] processed a message");
+            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction END][id=" + context.getInvocationId() + "][" + debtPositions.getCsvFilename() + "] processed a message");
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR][id=" + context.getInvocationId() + "] Generic Error " + e.getMessage() + " "
                     + e.getCause() + " - message: " + message);
@@ -78,7 +78,7 @@ public class CuCreateDebtPosition {
         // retry
         if (debtPositions.getRetryCount() < maxRetry) {
             failed.forEach(elem ->
-                    logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s] Retry iuv: %s", invocationId + ":" + elem.getId(), elem.getIuv()))
+                    logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s][%s] Retry iuv: %s", invocationId + ":" + elem.getId(), debtPositions.getCsvFilename(), elem.getIuv()))
             );
 
             // insert message in queue
@@ -93,7 +93,7 @@ public class CuCreateDebtPosition {
             // update with ERROR status
             failed.forEach(row -> {
                 String requestId = invocationId + ":" + row.getId();
-                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s] Update entity with ERROR status", requestId));
+                logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s][%s] Update entity with ERROR status", requestId, debtPositions.getCsvFilename()));
                 updateTable(debtPositions.getCsvFilename(), logger, row, false, requestId);
             });
         }
@@ -110,7 +110,7 @@ public class CuCreateDebtPosition {
 
     private RetryStep createAndPublishDebtPosition(String filename, Logger logger, DebtPositionRowMessage row, String invocationId) {
         String requestId = invocationId + ":" + row.getId();
-        logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "] filename:" + filename + " id:" + row.getId());
+        logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] row id:" + row.getId());
         switch (RetryStep.valueOf(row.getRetryAction())) {
             case NONE:
             case CREATE:
@@ -127,7 +127,7 @@ public class CuCreateDebtPosition {
                 }
             default:
                 // update entity
-                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 updateTable(filename, logger, row, true, requestId);
                 row.setRetryAction(RetryStep.DONE.name());
                 return RetryStep.DONE;
