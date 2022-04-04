@@ -62,7 +62,7 @@ public class DebtPositionTableService {
             table.execute(updateOperation);
 
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR][requestId=" + requestId + "] Error " + e);
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR][requestId=" + requestId + "][" + filename + "] Error " + e);
         }
     }
 
