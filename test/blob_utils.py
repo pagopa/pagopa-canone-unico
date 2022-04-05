@@ -22,6 +22,8 @@ parser.add_argument('--file', metavar='FILE', type=str, required="upload" in sys
                     help='file to upload')
 parser.add_argument('--path', metavar='PATH', type=str, nargs='?', help='directory of intput/output (default: ./)')
 parser.add_argument('--rows', metavar='ROWS', type=int, nargs='?', help='numbers of CSV rows to generate (default: 1)')
+parser.add_argument('--pa-fiscalcode', metavar='PA_FISCALCODE', type=str, nargs='?',
+                    help='PA fiscalcode to upload (size 11)')
 parser.add_argument('--account-name', metavar='ACCOUNT_NAME', type=str, nargs='?',
                     help='Azure account name (default: pagopadcanoneunicosa)')
 parser.add_argument('--container-name', metavar='CONTAINER_NAME', type=str, nargs='?',
@@ -32,6 +34,7 @@ action = args.action
 file = args.file
 path = args.path or "."
 rows = args.rows
+pa_fiscalcode = args.pa_fiscalcode or "11111111111"
 account_name = args.account_name or "pagopadcanoneunicosa"
 container_name = args.container_name or "pagopadcanoneunicosaincsvcontainer"
 
@@ -49,7 +52,7 @@ if action == Action.Upload:
             writer.writerow(header)
 
             for i in range(1, rows + 1):
-                data = [i, "", "", "11111111111", "", "fake@email.com", "pa_referent_email", "pa_referent_name",
+                data = [i, "", "", pa_fiscalcode, "", "fake@email.com", "pa_referent_email", "pa_referent_name",
                         random.randint(1, 100000), str(random.randint(0, 99999999999)).zfill(11),
                         "Lorem ipsum", "lorem@pec.loremit", "", ""]
                 # write the data
