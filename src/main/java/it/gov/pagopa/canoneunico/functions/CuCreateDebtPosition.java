@@ -49,7 +49,11 @@ public class CuCreateDebtPosition {
 
             var failed = debtPositions.getRows()
                     .parallelStream()
-                    .filter(row -> !RetryStep.DONE.equals(createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row, context.getInvocationId())))
+                    .filter(row -> {
+                        RetryStep retryStep = createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row, context.getInvocationId());
+                        row.setRetryAction(retryStep.name());
+                        return !RetryStep.DONE.equals(retryStep);
+                    })
                     .collect(Collectors.toList());
 
             long endTime = System.currentTimeMillis();
@@ -71,27 +75,42 @@ public class CuCreateDebtPosition {
      * @param logger        for logging
      * @param debtPositions message
      * @param failed        list of failed rows
-     * @param invocationId
+     * @param invocationId  invocation id for logging
      */
     private void handleFailedRows(Logger logger, DebtPositionMessage debtPositions, List<DebtPositionRowMessage> failed, String invocationId) {
         int maxRetry = maxAttempts != null ? Integer.parseInt(maxAttempts) : 0;
-        // retry
-        if (debtPositions.getRetryCount() < maxRetry) {
-            failed.forEach(elem ->
-                    logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s][%s] Retry iuv: %s", invocationId + ":" + elem.getId(), debtPositions.getCsvFilename(), elem.getIuv()))
-            );
+
+        // if elem is failed with 4xx HTTP status code, it isn't retryable
+        var notRetryable = failed.stream()
+                .filter(elem -> RetryStep.ERROR.name().equals(elem.getRetryAction()))
+                .collect(Collectors.toList());
+
+        var retryable = failed.stream()
+                .filter(elem -> !RetryStep.ERROR.name().equals(elem.getRetryAction()))
+                .collect(Collectors.toList());
+
+        // retry only if maxRetry is not reached
+        if (!retryable.isEmpty() && debtPositions.getRetryCount() < maxRetry) {
+            retryable
+                    .forEach(elem ->
+                            logger.log(Level.FINE, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s][%s] Retry iuv: %s", invocationId + ":" + elem.getId(), debtPositions.getCsvFilename(), elem.getIuv()))
+                    );
 
             // insert message in queue
             var queueService = getDebtPositionQueueService(logger);
             queueService.insertMessage(DebtPositionMessage.builder()
                     .csvFilename(debtPositions.getCsvFilename())
                     .retryCount(debtPositions.getRetryCount() + 1)
-                    .rows(failed)
+                    .rows(retryable)
                     .build());
 
         } else {
+            // stop retry at max attempts
+            notRetryable.addAll(retryable);
+        }
+        if (!notRetryable.isEmpty()) {
             // update with ERROR status
-            failed.forEach(row -> {
+            notRetryable.forEach(row -> {
                 String requestId = invocationId + ":" + row.getId();
                 logger.log(Level.WARNING, () -> String.format("[CuCreateDebtPositionFunction][requestId=%s][%s] Update entity with ERROR status", requestId, debtPositions.getCsvFilename()));
                 updateTable(debtPositions.getCsvFilename(), logger, row, false, requestId);
@@ -105,7 +124,7 @@ public class CuCreateDebtPosition {
      * @param filename     used as partition key
      * @param logger       for logging
      * @param row          element to process
-     * @param invocationId
+     * @param invocationId invocation id for logging
      */
 
     private RetryStep createAndPublishDebtPosition(String filename, Logger logger, DebtPositionRowMessage row, String invocationId) {
@@ -115,13 +134,19 @@ public class CuCreateDebtPosition {
             case NONE:
             case CREATE:
                 var statusCreate = this.createDebtPosition(logger, row, requestId);
-                if (!statusCreate) {
+                if (statusCreate >= 400 && statusCreate < 500) {
+                    return RetryStep.ERROR;
+                }
+                if (statusCreate != 201) {
                     row.setRetryAction(RetryStep.CREATE.name());
                     return RetryStep.CREATE;
                 }
             case PUBLISH:
                 var statusPublish = this.publishDebtPosition(logger, row, requestId);
-                if (!statusPublish) {
+                if (statusPublish >= 400 && statusPublish < 500) {
+                    return RetryStep.ERROR;
+                }
+                if (statusPublish != 200) {
                     row.setRetryAction(RetryStep.PUBLISH.name());
                     return RetryStep.PUBLISH;
                 }
@@ -141,7 +166,7 @@ public class CuCreateDebtPosition {
     }
 
 
-    private boolean createDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
+    private int createDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
         // get status from GPD
         GpdClient gpdClient = this.getGpdClientInstance();
         PaymentPositionModel body = PaymentPositionModel.builder()
@@ -170,7 +195,7 @@ public class CuCreateDebtPosition {
         return gpdClient.createDebtPosition(logger, row.getPaIdFiscalCode(), body, requestId);
     }
 
-    private boolean publishDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
+    private int publishDebtPosition(Logger logger, DebtPositionRowMessage row, String requestId) {
         GpdClient gpdClient = this.getGpdClientInstance();
         return gpdClient.publishDebtPosition(logger, row.getPaIdFiscalCode(), row.getIupd(), requestId);
     }

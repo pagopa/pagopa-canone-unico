@@ -53,8 +53,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(true);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(200);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
@@ -92,8 +92,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(200);
         doReturn(tableService).when(function).getDebtPositionTableService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
@@ -132,8 +132,8 @@ class CuCreateDebtPositionTest {
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(gpdClient).when(function).getGpdClientInstance();
-        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(true);
-        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(false);
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(500);
         doReturn(queueService).when(function).getDebtPositionQueueService(logger);
 
         String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
@@ -161,6 +161,45 @@ class CuCreateDebtPositionTest {
         verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), any());
         verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any(), any());
         verify(queueService, times(1)).insertMessage(any());
+    }
+
+    @Test
+    void runFailed3() throws JsonProcessingException {
+        // general var
+        Logger logger = Logger.getLogger("testlogging");
+
+        // precondition
+        when(context.getLogger()).thenReturn(logger);
+        doReturn(gpdClient).when(function).getGpdClientInstance();
+        when(gpdClient.createDebtPosition(any(), any(), any(), any())).thenReturn(201);
+        when(gpdClient.publishDebtPosition(any(), any(), any(), any())).thenReturn(400);
+        doReturn(tableService).when(function).getDebtPositionTableService(logger);
+
+        String message = new ObjectMapper().writeValueAsString(DebtPositionMessage.builder()
+                .csvFilename("csv")
+                .retryCount(-1) // to trigger retry during test
+                .rows(List.of(DebtPositionRowMessage.builder()
+                        .id("001")
+                        .amount(100L)
+                        .iuv("IUV")
+                        .iupd("IUPD")
+                        .paIdFiscalCode("PAFISCALCODE")
+                        .debtorIdFiscalCode("DEBTORFISCALCODE")
+                        .debtorName("DEBTORNAME")
+                        .debtorEmail("DEBTOREMAIL")
+                        .companyName("COMPANY")
+                        .iban("IBAN")
+                        .retryAction("NONE")
+                        .build()))
+                .build());
+        function.run(message, context);
+
+        // Asserts
+        verify(function, times(2)).getGpdClientInstance();
+        verify(function, times(1)).getDebtPositionTableService(logger);
+        verify(gpdClient, times(1)).createDebtPosition(any(), any(), any(), any());
+        verify(gpdClient, times(1)).publishDebtPosition(any(), any(), any(), any());
+        verify(tableService, times(1)).updateEntity(any(), any(), anyBoolean(), any());
     }
 
     @Test
