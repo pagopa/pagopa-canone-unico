@@ -142,7 +142,7 @@ class CuCsvServiceTest {
       
         CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
         assertNotNull(csvToBean);
-        assertEquals(1, csvToBean.parse().size());
+        assertEquals(0, csvToBean.parse().size());
         
     }
     
