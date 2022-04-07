@@ -125,7 +125,6 @@ public class DebtPositionService {
                                 Collections.addAll(
                                         rowsItem,
                                         deNull(entity.getRowKey()),
-                                        deNull(entity.getStatus()),
                                         deNull(entity.getPaIdIstat()),
                                         deNull(entity.getPaIdCatasto()),
                                         deNull(entity.getPaIdFiscalCode()),
