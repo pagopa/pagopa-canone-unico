@@ -1,20 +1,9 @@
 package it.gov.pagopa.canoneunico.functions;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.storage.StorageException;
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.bean.HeaderColumnNameMappingStrategy;
-import com.opencsv.enums.CSVReaderNullFieldIndicator;
-import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
-import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
-import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
-import it.gov.pagopa.canoneunico.service.CuCsvService;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,10 +17,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.storage.StorageException;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameMappingStrategy;
+import com.opencsv.enums.CSVReaderNullFieldIndicator;
+import com.opencsv.exceptions.CsvConstraintViolationException;
+
+import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
+import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
+import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
+import it.gov.pagopa.canoneunico.service.CuCsvService;
 
 @ExtendWith(MockitoExtension.class)
 class CuCsvParsingTest {
@@ -44,7 +48,7 @@ class CuCsvParsingTest {
 
     @Mock
     CuCsvService cuCsvService;
-
+    
 
     private String readFromInputStream(InputStream inputStream) {
         StringBuilder resultStringBuilder = new StringBuilder();
@@ -60,13 +64,21 @@ class CuCsvParsingTest {
     }
 
     @Test
-    void checkParseFileOKTest() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
+    void checkParseFileOKTest() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException, CsvConstraintViolationException {
 
         ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
         String data = readFromInputStream(inputStream);
 
         Logger logger = Logger.getLogger("testlogging");
+        
+        // mock ecConfig organizations list
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
+        ec.setPaIdCatasto("C123");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
 
 
         Reader reader = new StringReader(data);
@@ -79,7 +91,7 @@ class CuCsvParsingTest {
                 .withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
                 .withOrderedResults(true)
                 .withMappingStrategy(mappingStrategy)
-                .withVerifier(new PaymentNoticeVerifier(new ArrayList<>()))
+                .withVerifier(new PaymentNoticeVerifier(organizationsList))
                 .withType(PaymentNotice.class)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
@@ -91,7 +103,7 @@ class CuCsvParsingTest {
                 .withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
                 .withOrderedResults(true)
                 .withMappingStrategy(mappingStrategy)
-                .withVerifier(new PaymentNoticeVerifier(new ArrayList<>()))
+                .withVerifier(new PaymentNoticeVerifier(organizationsList))
                 .withType(PaymentNotice.class)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
@@ -101,6 +113,7 @@ class CuCsvParsingTest {
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+       
 
         byte[] file = data.getBytes();
 
