@@ -36,7 +36,6 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 		if (!((null != bean.getPaIdCatasto() ^ null != bean.getPaIdIstat() ^ null!= bean.getPaIdFiscalCode())
 				^ (null != bean.getPaIdCatasto() && null != bean.getPaIdIstat() && null != bean.getPaIdFiscalCode()))) {
 			errors.add("Only one of pa_id_istat, pa_id_catasto and pa_id_fiscal_code can be valued.");
-			
 		}
 		
 		// check amount value
