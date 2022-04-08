@@ -172,7 +172,7 @@ class CuCsvServiceTest {
     }
     
     @Test
-    void parseCsv_KO_Duplication() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+    void parseCsv_KO_Duplication_Id_Catasto() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
         Logger logger = Logger.getLogger("testlogging");
 
         
@@ -219,6 +219,58 @@ class CuCsvServiceTest {
         CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
         assertNotNull(csvToBean);
         // Il parsing del file va in errore per id_catasto duplicato quindi la size è 0
+        assertEquals(0, csvToBean.parse().size());
+        
+    }
+    
+    @Test
+    void parseCsv_KO_Duplication_Id_Istat() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        
+        // create and init ecConfig table
+        var csvService = spy(new CuCsvService(storageConnectionString, "ecconfig", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("ecconfig");
+        try {
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        }
+        
+        EcConfigEntity ec1 = new EcConfigEntity("paFiscalCodeIstat1");
+        ec1.setPaIdIstat("Istat1");
+        ec1.setCompanyName("company");
+        ec1.setIban("iban");
+        EcConfigEntity ec2 = new EcConfigEntity("paFiscalCodeIstat2");
+        ec2.setPaIdIstat("Istat1");
+        ec2.setCompanyName("company");
+        ec2.setIban("iban");
+        
+        TableBatchOperation batchOperation = new TableBatchOperation();
+        batchOperation.insert(ec1);
+        batchOperation.insert(ec2);
+        table.execute(batchOperation);
+        
+        csvService.initEcConfigList();
+        
+        StringWriter csv = new StringWriter();
+        
+        String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+        String row = "1;Istat1;;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
+        
+        csv.append(headers);
+        csv.append(System.lineSeparator());
+        csv.append(row);
+      
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        assertNotNull(csvToBean);
+        // Il parsing del file va in errore per id_istat duplicato quindi la size è 0
         assertEquals(0, csvToBean.parse().size());
         
     }
