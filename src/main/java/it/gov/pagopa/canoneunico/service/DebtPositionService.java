@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class DebtPositionService {
 
     private static final String CSV_HEAD =
-            "id;status;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+            "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
     private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
     public static final String STATUS = "Status";
     private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
