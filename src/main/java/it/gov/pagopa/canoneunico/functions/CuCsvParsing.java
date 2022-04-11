@@ -119,7 +119,7 @@ public class CuCsvParsing {
     		}
     	} catch (Exception e) {
 			logger.log(Level.SEVERE, () -> String.format(
-					"[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s",
+					LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s",
 					fileName, e.getMessage(), e.getCause()));
 		} 
 
