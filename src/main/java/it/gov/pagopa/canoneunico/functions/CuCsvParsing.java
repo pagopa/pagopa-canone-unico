@@ -118,7 +118,7 @@ public class CuCsvParsing {
 						fileName, start, LocalDateTime.now()));
     		}
     	} catch (Exception e) {
-			logger.log(Level.SEVERE, () -> String.format(
+			logger.log(Level.SEVERE, () -> String.format(LOG_VALIDATION_PREFIX +
 					"[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s",
 					fileName, e.getMessage(), e.getCause()));
 		} 
