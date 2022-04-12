@@ -169,12 +169,9 @@ public class CuCsvService {
     }
 
     public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
-
         this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
 
-
         List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
-
         List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileName, payments), batchSizeDebtPosTable);
 
         // save debt positions partition in table
@@ -359,7 +356,6 @@ public class CuCsvService {
         return IuvCodeBusiness.generateIUV(segregationCode, nextVal);
     }
 
-
     private List<DebtPositionEntity> getDebtPositionEntities(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
         List<DebtPositionEntity> debtPositionEntities = new ArrayList<>();
         int nextVal = 0;
@@ -394,21 +390,16 @@ public class CuCsvService {
     }
 
 	private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
-		EcConfigEntity ecConfig = organizationsList.stream()
-				.filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto())
-						|| o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
-				.findFirst()
-				.orElseThrow(() -> new CanoneUnicoException(
-						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = "
-								+ e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = "
-								+ e.getPaIdFiscalCode()));
+		// get data from ec_config
+        EcConfigEntity ecConfig = organizationsList.stream()
+                .filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
+                .findFirst()
+                .orElseThrow(() -> new CanoneUnicoException("[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = " + e.getPaIdFiscalCode()));
 
 		// convention: skip if iban not present
 		if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
-			logger.warning(
-					"[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto()
-							+ "; idIstat=" + ecConfig.getPaIdIstat() + "] is without iban -> set status to SKIPPED");
-			// overwrite the state to skipped
+            logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto() + "; idIstat=" + ecConfig.getPaIdIstat() + "; paIdFiscalCode = " + e.getPaIdFiscalCode() + "] is without iban -> set status to SKIPPED");
+            // overwrite the state to skipped
 			e.setStatus(Status.SKIPPED.name());
 			e.setNote(Status.SKIPPED.name());
 		}
