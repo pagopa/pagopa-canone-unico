@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
 
 import com.opencsv.bean.BeanVerifier;
 import com.opencsv.exceptions.CsvConstraintViolationException;
@@ -42,6 +43,21 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 			errors.add("The amount must be greater than zero.");
 		}
 		
+		// check existence of the organization fiscal code if valued in csv file
+		if (null != bean.getPaIdFiscalCode() && !bean.getPaIdFiscalCode().isBlank() && !checkIsPresentOrganizationFiscalCode(bean.getPaIdFiscalCode())) {
+			errors.add("Not found the pa_id_fiscal_code ["+bean.getPaIdFiscalCode()+"] " + EC_CONFIG_TABLE);
+		}
+		
+		// check existence of id istat if valued in csv file
+		if (null != bean.getPaIdIstat() && !bean.getPaIdIstat().isBlank() && !checkIsPresentIdIstat(bean.getPaIdIstat())) {
+			errors.add("Not found the pa_id_istat ["+bean.getPaIdIstat()+"] " + EC_CONFIG_TABLE);
+		}
+		
+		// check existence of id catasto if valued in csv file
+		if (null != bean.getPaIdCatasto() && !bean.getPaIdCatasto().isBlank() && !checkIsPresentIdCatasto(bean.getPaIdCatasto())) {
+			errors.add("Not found the pa_id_catasto ["+bean.getPaIdCatasto()+"] " + EC_CONFIG_TABLE);
+		}
+		
 		// check duplication id istat if valued in csv file
 		if (null != bean.getPaIdIstat() && !bean.getPaIdIstat().isBlank() && !checkDuplicatedIdIstat(bean.getPaIdIstat())) {
 			errors.add("Found duplicate pa_id_istat ["+bean.getPaIdIstat()+"] " + EC_CONFIG_TABLE);
@@ -57,6 +73,21 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 		}
 		
 		return true;
+	}
+	
+	private boolean checkIsPresentOrganizationFiscalCode(String paIdFiscalCode) {
+		Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getRowKey().equals(paIdFiscalCode)).findFirst();
+		return ecConfig.isPresent();
+	}
+	
+	private boolean checkIsPresentIdIstat(String idIstat) {
+		Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getPaIdIstat()!=null && o.getPaIdIstat().equals(idIstat)).findFirst();
+		return ecConfig.isPresent();
+	}
+	
+	private boolean checkIsPresentIdCatasto(String idCatasto) {
+		Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getPaIdCatasto()!=null && o.getPaIdCatasto().equals(idCatasto)).findFirst();
+		return ecConfig.isPresent();
 	}
 	
 	private boolean checkDuplicatedIdIstat(String idIstat) {
