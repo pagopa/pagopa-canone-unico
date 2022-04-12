@@ -1,5 +1,5 @@
 package it.gov.pagopa.canoneunico.entity;
 
 public enum Status {
-    INSERTED, CREATED, ERROR
+    INSERTED, CREATED, SKIPPED, ERROR
 }
