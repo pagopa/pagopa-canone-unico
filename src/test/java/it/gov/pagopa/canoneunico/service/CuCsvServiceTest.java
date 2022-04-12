@@ -709,5 +709,44 @@ class CuCsvServiceTest {
         assertEquals("iban", e.getIban());
     }
     
+    @Test
+    void enrichDebtPositionEntity2() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    	Logger logger = Logger.getLogger("testlogging");
+    	var csvService = spy(new CuCsvService(logger));
+    	//precondition
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode");
+        ec.setPaIdCatasto("idCatasto");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
+        Field list = csvService.getClass().getDeclaredField("organizationsList");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,organizationsList);
+        
+        DebtPositionEntity e = new DebtPositionEntity();
+        e.setPartitionKey("filename_0000.csv");
+        e.setRowKey("1");
+        e.setPaIdCatasto("idCatasto");
+        e.setDebtorName("name");
+        e.setDebtorEmail("email");
+        e.setAmount("0");
+        e.setPaymentNoticeNumber("iuv");
+        e.setIupd("iupd");
+        e.setDebtorIdFiscalCode("fiscalcode");
+        e.setStatus(Status.INSERTED.toString());
+        
+        assertNull(e.getCompanyName());
+        assertNull(e.getIban());
+        
+        Method m = csvService.getClass().getDeclaredMethod("enrichDebtPositionEntity", DebtPositionEntity.class);
+        m.setAccessible(true);
+        m.invoke(csvService, e);
+        
+        assertEquals("company", e.getCompanyName());
+        assertEquals("iban", e.getIban());
+    } 
     
 }
