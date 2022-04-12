@@ -319,14 +319,14 @@ public class CuCsvService {
         return csv.toString();
     }
 
-    public String getValidIUV(String paIdFiscalCode, int segregationCode, int nextVal) throws CanoneUnicoException {
+    public String getValidIUV(String paIdFiscalCode, int segregationCode) throws CanoneUnicoException {
         final int MAX_RETRY_COUNT = 7;
         int retryCount = 1;
         String iuv = null;
         while (true) {
             try {
                 if (null != iuvGenerationType && iuvGenerationType.equalsIgnoreCase("seq")) {
-                    iuv = this.generateIncrementalIUV(segregationCode, nextVal);
+                    iuv = this.generateIncrementalIUV(segregationCode, 0);
                 } else {
                     iuv = this.generateIUV(segregationCode);
                 }
@@ -358,7 +358,6 @@ public class CuCsvService {
 
     private List<DebtPositionEntity> getDebtPositionEntities(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
         List<DebtPositionEntity> debtPositionEntities = new ArrayList<>();
-        int nextVal = 0;
         for (PaymentNotice p : payments) {
             DebtPositionEntity e = new DebtPositionEntity(fileName, p.getId());
             e.setPaIdIstat(p.getPaIdIstat());
@@ -378,7 +377,7 @@ public class CuCsvService {
             this.enrichDebtPositionEntity(e);
             // generate iuv and iupd if status is not SKIPPED
             if (!e.getStatus().equals(Status.SKIPPED.name())) {
-                String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
+                String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode);
                 e.setPaymentNoticeNumber(iuv);
                 e.setIupd(this.generateIUPD(iuv));
             }

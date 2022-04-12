@@ -632,7 +632,7 @@ class CuCsvServiceTest {
         CloudTable table = cloudTableClient.getTableReference("iuv");
         table.createIfNotExists();
         
-        String iuv = csvService.getValidIUV("fiscal-code", 47, 1);
+        String iuv = csvService.getValidIUV("fiscal-code", 47);
         assertNotNull(iuv); 
         assertEquals(17, iuv.getBytes().length);
         
