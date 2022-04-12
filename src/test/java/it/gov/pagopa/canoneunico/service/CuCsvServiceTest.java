@@ -191,10 +191,10 @@ class CuCsvServiceTest {
         	logger.info("Table already exist");
         }
         
+        // test con EC censito senza iban, il parsing del file deve andare cmq a buon fine (Change request: PPD-145 Enti non aderenti)
         EcConfigEntity ec = new EcConfigEntity("paFiscalCode2");
         ec.setPaIdCatasto("C125");
         ec.setCompanyName("company");
-        ec.setIban("iban");
         
         TableBatchOperation batchOperation = new TableBatchOperation();
         batchOperation.insert(ec);
@@ -205,8 +205,7 @@ class CuCsvServiceTest {
         StringWriter csv = new StringWriter();
         
         String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
-        // test con EC non è censito nell'ecconfig, il parsing del file deve andare cmq a buon fine (Change request: PPD-145 Enti non aderenti)
-        String row = "1;;X127;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
+        String row = "1;;C125;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
         
         csv.append(headers);
         csv.append(System.lineSeparator());
@@ -474,6 +473,7 @@ class CuCsvServiceTest {
         }
         
         //precondition
+        // test con un EC censito senza iban nell'ecconfig, il record deve essere inserito in tabella con status SKIPPED (Change request: PPD-145 Enti non aderenti)
         List<EcConfigEntity> organizationsList = new ArrayList<>();
         EcConfigEntity ec = new EcConfigEntity();
         ec.setPartitionKey("org");
@@ -481,12 +481,17 @@ class CuCsvServiceTest {
         ec.setCompanyName("company");
         ec.setIban("iban");
         organizationsList.add(ec);
+        ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode2");
+        ec.setCompanyName("company2");
+        organizationsList.add(ec);
         Field list = csvService.getClass().getDeclaredField("organizationsList");
         list.setAccessible(true); // Suppress Java language access checking
         list.set(csvService,organizationsList);
        
         
-        // test con EC non è censito nell'ecconfig, il record deve essere inserito in tabella con status SKIPPED (Change request: PPD-145 Enti non aderenti)
+        
         List<PaymentNotice> payments = new ArrayList<>();
         PaymentNotice p = new PaymentNotice();
         p.setId("1");
