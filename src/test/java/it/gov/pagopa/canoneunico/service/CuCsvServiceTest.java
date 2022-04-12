@@ -172,6 +172,53 @@ class CuCsvServiceTest {
     }
     
     @Test
+    void parseCsv2() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        
+        // create and init ecConfig table
+        var csvService = spy(new CuCsvService(storageConnectionString, "ecconfig", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("ecconfig");
+        try {
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        }
+        
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode2");
+        ec.setPaIdCatasto("C125");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        
+        TableBatchOperation batchOperation = new TableBatchOperation();
+        batchOperation.insert(ec);
+        table.execute(batchOperation);
+        
+        csvService.initEcConfigList();
+        
+        StringWriter csv = new StringWriter();
+        
+        String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
+        // test con EC non è censito nell'ecconfig, il parsing del file deve andare cmq a buon fine (Change request: PPD-145 Enti non aderenti)
+        String row = "1;;X127;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
+        
+        csv.append(headers);
+        csv.append(System.lineSeparator());
+        csv.append(row);
+      
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        assertNotNull(csvToBean);
+        assertEquals(1, csvToBean.parse().size());
+        
+    }
+    
+    @Test
     void parseCsv_KO_Duplication_Id_Catasto() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
         Logger logger = Logger.getLogger("testlogging");
 
@@ -384,7 +431,7 @@ class CuCsvServiceTest {
         List<EcConfigEntity> organizationsList = new ArrayList<>();
         EcConfigEntity ec = new EcConfigEntity();
         ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode");
+        ec.setRowKey("paFiscalCode0");
         ec.setCompanyName("company");
         ec.setIban("iban");
         organizationsList.add(ec);
@@ -395,13 +442,68 @@ class CuCsvServiceTest {
         
         List<PaymentNotice> payments = new ArrayList<>();
         PaymentNotice p = new PaymentNotice();
-        p.setId("1");
+        p.setId("5");
         p.setAmount(0);
-        p.setPaIdFiscalCode("paFiscalCode");
+        p.setPaIdFiscalCode("paFiscalCode0");
         payments.add(p);
         List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition("fileName", payments);
         assertNotNull(savedEntities);
         assertEquals(1, savedEntities.size());
+        
+    }
+    
+    @Test
+    void saveDebtPosition2() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        
+        try {
+        	CloudTable table = cloudTableClient.getTableReference("debtPositionT");
+            table.createIfNotExists();
+            table = cloudTableClient.getTableReference("iuv");
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        }
+        
+        //precondition
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
+        Field list = csvService.getClass().getDeclaredField("organizationsList");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,organizationsList);
+       
+        
+        // test con EC non è censito nell'ecconfig, il record deve essere inserito in tabella con status SKIPPED (Change request: PPD-145 Enti non aderenti)
+        List<PaymentNotice> payments = new ArrayList<>();
+        PaymentNotice p = new PaymentNotice();
+        p.setId("1");
+        p.setAmount(0);
+        p.setPaIdFiscalCode("paFiscalCode");
+        payments.add(p);
+        p = new PaymentNotice();
+        p.setId("2");
+        p.setAmount(2);
+        p.setPaIdFiscalCode("paFiscalCode2");
+        payments.add(p);
+        List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition("fileName", payments);
+        assertNotNull(savedEntities);
+        assertEquals(2, savedEntities.size());
+        assertEquals(Status.INSERTED.name(), savedEntities.get(0).getStatus());
+        assertEquals(Status.SKIPPED.name(), savedEntities.get(1).getStatus());
+        
         
     }
     
