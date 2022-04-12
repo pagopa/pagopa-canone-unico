@@ -1,35 +1,11 @@
 package it.gov.pagopa.canoneunico.service;
 
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.specialized.BlockBlobClient;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.RetryNoRetry;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.queue.CloudQueue;
-import com.microsoft.azure.storage.table.CloudTable;
-import com.microsoft.azure.storage.table.CloudTableClient;
-import com.microsoft.azure.storage.table.TableBatchOperation;
-import com.microsoft.azure.storage.table.TableRequestOptions;
-import com.opencsv.bean.CsvToBean;
-import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
-import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
-import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
-import it.gov.pagopa.canoneunico.entity.Status;
-import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
-import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
-import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
-import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
-import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
-import org.junit.ClassRule;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.spy;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -44,11 +20,38 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.spy;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.microsoft.azure.storage.CloudStorageAccount;
+import com.microsoft.azure.storage.RetryNoRetry;
+import com.microsoft.azure.storage.StorageException;
+import com.microsoft.azure.storage.queue.CloudQueue;
+import com.microsoft.azure.storage.table.CloudTable;
+import com.microsoft.azure.storage.table.CloudTableClient;
+import com.microsoft.azure.storage.table.TableBatchOperation;
+import com.microsoft.azure.storage.table.TableRequestOptions;
+import com.opencsv.bean.CsvToBean;
+
+import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
+import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
+import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
+import it.gov.pagopa.canoneunico.entity.Status;
+import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
+import it.gov.pagopa.canoneunico.model.DebtPositionMessage;
+import it.gov.pagopa.canoneunico.model.DebtPositionRowMessage;
+import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
+import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 
 
 @Testcontainers
@@ -715,6 +718,42 @@ class CuCsvServiceTest {
         
         assertEquals("company", e.getCompanyName());
         assertEquals("iban", e.getIban());
-    } 
+    }
     
+    @Test
+    void enrichDebtPositionEntity_KO() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    	Logger logger = Logger.getLogger("testlogging");
+    	var csvService = spy(new CuCsvService(logger));
+    	//precondition
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity();
+        ec.setPartitionKey("org");
+        ec.setRowKey("paFiscalCode");
+        ec.setCompanyName("company");
+        ec.setIban("iban");
+        organizationsList.add(ec);
+        Field list = csvService.getClass().getDeclaredField("organizationsList");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,organizationsList);
+        
+        DebtPositionEntity e = new DebtPositionEntity();
+        e.setPartitionKey("filename_0000.csv");
+        e.setRowKey("1");
+        e.setPaIdFiscalCode("paFiscalCodeWrong");
+        e.setDebtorName("name");
+        e.setDebtorEmail("email");
+        e.setAmount("0");
+        e.setPaymentNoticeNumber("iuv");
+        e.setIupd("iupd");
+        e.setDebtorIdFiscalCode("fiscalcode");
+        e.setStatus(Status.INSERTED.toString());
+        
+        assertNull(e.getCompanyName());
+        assertNull(e.getIban());
+        
+        Method m = csvService.getClass().getDeclaredMethod("enrichDebtPositionEntity", DebtPositionEntity.class);
+        m.setAccessible(true);
+        assertThrows (Exception.class, ()->m.invoke(csvService, e), "");  
+    }
+ 
 }
