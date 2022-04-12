@@ -393,78 +393,36 @@ public class CuCsvService {
         return debtPositionEntities;
     }
 
-    private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
-        EcConfigEntity ecConfig = organizationsList.stream()
-                .filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
-                .findFirst()
-                .orElseThrow(() -> new CanoneUnicoException("[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = " + e.getPaIdFiscalCode()));
+	private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
+		EcConfigEntity ecConfig = organizationsList.stream()
+				.filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto())
+						|| o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
+				.findFirst()
+				.orElseThrow(() -> new CanoneUnicoException(
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = "
+								+ e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = "
+								+ e.getPaIdFiscalCode()));
 
-        // convention: skip if iban not present
-        if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
-            logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto() + "; idIstat=" + ecConfig.getPaIdIstat() + "] is without iban -> set status to SKIPPED");
-            // overwrite the state to skipped
-            e.setStatus(Status.SKIPPED.name());
-            e.setNote(Status.SKIPPED.name());
-        } else {
-            e.setPaIdFiscalCode(ecConfig.getRowKey());
-            e.setPaIdIstat(ecConfig.getPaIdIstat());
-            e.setPaIdCatasto(ecConfig.getPaIdCatasto());
-            e.setPaIdCbill(ecConfig.getPaIdCbill());
-            e.setPaPecEmail(ecConfig.getPaPecEmail());
-            e.setPaReferentEmail(ecConfig.getPaReferentEmail());
-            e.setPaReferentName(ecConfig.getPaReferentName());
-            e.setCompanyName(ecConfig.getCompanyName());
-            e.setIban(ecConfig.getIban());
-        }
-    	
-    	/*
-        if (null == e.getPaIdFiscalCode() || e.getPaIdFiscalCode().isBlank()) {
-            // get extra info by paIdCatasto or paIdIstat
-            EcConfigEntity ecConfig = organizationsList.stream().filter(
-                            o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()))
-                    .findFirst().orElseThrow(() -> new CanoneUnicoException(
-                            "[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat()));
-            
-            if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
-            	logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto="+ecConfig.getPaIdCatasto()+"; idIstat="+ecConfig.getPaIdIstat()+"] is without iban -> set status to SKIPPED");
-            	// overwrite the state to skipped
-            	e.setStatus(Status.SKIPPED.name());
-            	e.setNote(Status.SKIPPED.name());
-            }
-            else {
-            	e.setPaIdFiscalCode(ecConfig.getRowKey());
-            	e.setPaIdIstat(ecConfig.getPaIdIstat());
-            	e.setPaIdCatasto(ecConfig.getPaIdCatasto());
-            	e.setPaIdCbill(ecConfig.getPaIdCbill());
-            	e.setPaPecEmail(ecConfig.getPaPecEmail());
-            	e.setPaReferentEmail(ecConfig.getPaReferentEmail());
-            	e.setPaReferentName(ecConfig.getPaReferentName());
-            	e.setCompanyName(ecConfig.getCompanyName());
-            	e.setIban(ecConfig.getIban());
-            }
-        } else {
-            EcConfigEntity ecConfig = organizationsList.stream().filter(o -> o.getRowKey().equals(e.getPaIdFiscalCode())).findFirst()
-            		.orElseThrow(() -> new CanoneUnicoException(
-                            "[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = " + e.getPaIdFiscalCode()));
-            
-            if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
-                logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [paIdFiscalCode = " + e.getPaIdFiscalCode() + "] is without iban -> set status to SKIPPED");
-                // overwrite the state to skipped
-                e.setStatus(Status.SKIPPED.name());
-                e.setNote(Status.SKIPPED.name());
-            }
-            else {
-	            e.setPaIdCbill(ecConfig.getPaIdCbill());
-	            e.setPaIdIstat(ecConfig.getPaIdIstat());
-	            e.setPaIdCatasto(ecConfig.getPaIdCatasto());
-	            e.setPaPecEmail(ecConfig.getPaPecEmail());
-	            e.setPaReferentEmail(ecConfig.getPaReferentEmail());
-	            e.setPaReferentName(ecConfig.getPaReferentName());
-	            e.setCompanyName(ecConfig.getCompanyName());
-	            e.setIban(ecConfig.getIban());
-            }
-        }*/
-    }
+		// convention: skip if iban not present
+		if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
+			logger.warning(
+					"[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto()
+							+ "; idIstat=" + ecConfig.getPaIdIstat() + "] is without iban -> set status to SKIPPED");
+			// overwrite the state to skipped
+			e.setStatus(Status.SKIPPED.name());
+			e.setNote(Status.SKIPPED.name());
+		}
+		e.setPaIdFiscalCode(ecConfig.getRowKey());
+		e.setPaIdIstat(ecConfig.getPaIdIstat());
+		e.setPaIdCatasto(ecConfig.getPaIdCatasto());
+		e.setPaIdCbill(ecConfig.getPaIdCbill());
+		e.setPaPecEmail(ecConfig.getPaPecEmail());
+		e.setPaReferentEmail(ecConfig.getPaReferentEmail());
+		e.setPaReferentName(ecConfig.getPaReferentName());
+		e.setCompanyName(ecConfig.getCompanyName());
+		e.setIban(ecConfig.getIban());
+
+	}
 
     private List<DebtPositionRowMessage> getDebtPositionQueueMsg(List<DebtPositionEntity> debtPositionEntities) {
         List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>();
