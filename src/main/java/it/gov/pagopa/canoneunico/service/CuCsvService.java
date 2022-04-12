@@ -1,22 +1,5 @@
 package it.gov.pagopa.canoneunico.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.math.NumberUtils;
-
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -39,7 +22,6 @@ import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.model.PaymentNoticeError;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
@@ -57,6 +39,22 @@ import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 
 @NoArgsConstructor
@@ -71,7 +69,7 @@ public class CuCsvService {
     private String iuvsTable = System.getenv("IUVS_TABLE");
     private String ecConfigTable = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
     private String debtPositionQueue = System.getenv("DEBT_POSITIONS_QUEUE");
-    private Integer segregationCode = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE")); 
+    private Integer segregationCode = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
     private Integer batchSizeDebtPosQueue = System.getenv("BATCH_SIZE_DEBT_POS_QUEUE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_QUEUE")) : 25;
     private Integer batchSizeDebtPosTable = System.getenv("BATCH_SIZE_DEBT_POS_TABLE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_TABLE")) : 25;
     private Logger logger;
@@ -100,8 +98,8 @@ public class CuCsvService {
     }
 
     public CuCsvService(String storageConnectionString, String ecConfigTable, int batchSize, Logger logger) {
-    	this.batchSizeDebtPosQueue = batchSize;
-    	this.batchSizeDebtPosTable = batchSize;
+        this.batchSizeDebtPosQueue = batchSize;
+        this.batchSizeDebtPosTable = batchSize;
         this.storageConnectionString = storageConnectionString;
         this.ecConfigTable = ecConfigTable;
         this.logger = logger;
@@ -384,9 +382,9 @@ public class CuCsvService {
             this.enrichDebtPositionEntity(e);
             // generate iuv and iupd if status is not SKIPPED
             if (!e.getStatus().equals(Status.SKIPPED.name())) {
-            	String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
-            	e.setPaymentNoticeNumber(iuv);
-            	e.setIupd(this.generateIUPD(iuv));
+                String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
+                e.setPaymentNoticeNumber(iuv);
+                e.setIupd(this.generateIUPD(iuv));
             }
 
             debtPositionEntities.add(e);
@@ -396,27 +394,27 @@ public class CuCsvService {
     }
 
     private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
-    	EcConfigEntity ecConfig = organizationsList.stream().filter(
-                o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
-        .findFirst().orElseThrow(() -> new CanoneUnicoException(
-                "[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = " + e.getPaIdFiscalCode()));
-    	
-    	if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
-        	logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto="+ecConfig.getPaIdCatasto()+"; idIstat="+ecConfig.getPaIdIstat()+"] is without iban -> set status to SKIPPED");
-        	// overwrite the state to skipped
-        	e.setStatus(Status.SKIPPED.name());
-        	e.setNote(Status.SKIPPED.name());
-        }
-        else {
-        	e.setPaIdFiscalCode(ecConfig.getRowKey());
-        	e.setPaIdIstat(ecConfig.getPaIdIstat());
-        	e.setPaIdCatasto(ecConfig.getPaIdCatasto());
-        	e.setPaIdCbill(ecConfig.getPaIdCbill());
-        	e.setPaPecEmail(ecConfig.getPaPecEmail());
-        	e.setPaReferentEmail(ecConfig.getPaReferentEmail());
-        	e.setPaReferentName(ecConfig.getPaReferentName());
-        	e.setCompanyName(ecConfig.getCompanyName());
-        	e.setIban(ecConfig.getIban());
+        EcConfigEntity ecConfig = organizationsList.stream()
+                .filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
+                .findFirst()
+                .orElseThrow(() -> new CanoneUnicoException("[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = " + e.getPaIdFiscalCode()));
+
+        // convention: skip if iban not present
+        if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
+            logger.warning("[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto() + "; idIstat=" + ecConfig.getPaIdIstat() + "] is without iban -> set status to SKIPPED");
+            // overwrite the state to skipped
+            e.setStatus(Status.SKIPPED.name());
+            e.setNote(Status.SKIPPED.name());
+        } else {
+            e.setPaIdFiscalCode(ecConfig.getRowKey());
+            e.setPaIdIstat(ecConfig.getPaIdIstat());
+            e.setPaIdCatasto(ecConfig.getPaIdCatasto());
+            e.setPaIdCbill(ecConfig.getPaIdCbill());
+            e.setPaPecEmail(ecConfig.getPaPecEmail());
+            e.setPaReferentEmail(ecConfig.getPaReferentEmail());
+            e.setPaReferentName(ecConfig.getPaReferentName());
+            e.setCompanyName(ecConfig.getCompanyName());
+            e.setIban(ecConfig.getIban());
         }
     	
     	/*
@@ -471,21 +469,21 @@ public class CuCsvService {
     private List<DebtPositionRowMessage> getDebtPositionQueueMsg(List<DebtPositionEntity> debtPositionEntities) {
         List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>();
         for (DebtPositionEntity e : debtPositionEntities) {
-        	if (!e.getStatus().equals(Status.SKIPPED.name())) {
-	            DebtPositionRowMessage row = new DebtPositionRowMessage();
-	            row.setId(e.getRowKey());
-	            row.setDebtorName(e.getDebtorName());
-	            row.setDebtorEmail(e.getDebtorEmail());
-	            row.setAmount(Long.parseLong(e.getAmount()));
-	            row.setIuv(e.getPaymentNoticeNumber());
-	            row.setIupd(e.getIupd());
-	            row.setPaIdFiscalCode(e.getPaIdFiscalCode());
-	            row.setDebtorIdFiscalCode(e.getDebtorIdFiscalCode());
-	            row.setCompanyName(e.getCompanyName());
-	            row.setIban(e.getIban());
-	            row.setRetryAction(RetryStep.NONE.name());
-	            debtPositionMsgs.add(row);
-        	}
+            if (!e.getStatus().equals(Status.SKIPPED.name())) {
+                DebtPositionRowMessage row = new DebtPositionRowMessage();
+                row.setId(e.getRowKey());
+                row.setDebtorName(e.getDebtorName());
+                row.setDebtorEmail(e.getDebtorEmail());
+                row.setAmount(Long.parseLong(e.getAmount()));
+                row.setIuv(e.getPaymentNoticeNumber());
+                row.setIupd(e.getIupd());
+                row.setPaIdFiscalCode(e.getPaIdFiscalCode());
+                row.setDebtorIdFiscalCode(e.getDebtorIdFiscalCode());
+                row.setCompanyName(e.getCompanyName());
+                row.setIban(e.getIban());
+                row.setRetryAction(RetryStep.NONE.name());
+                debtPositionMsgs.add(row);
+            }
         }
         return debtPositionMsgs;
     }

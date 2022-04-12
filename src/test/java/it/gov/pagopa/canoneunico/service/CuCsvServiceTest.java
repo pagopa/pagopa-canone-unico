@@ -477,11 +477,13 @@ class CuCsvServiceTest {
         List<EcConfigEntity> organizationsList = new ArrayList<>();
         EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
         ec.setPaIdCatasto("idCatasto");
+        ec.setPaIdIstat("2");
         ec.setCompanyName("company");
         ec.setIban("iban");
         organizationsList.add(ec);
         ec = new EcConfigEntity("paFiscalCode2");
         ec.setPaIdCatasto("idCatasto2");
+        ec.setPaIdIstat("3");
         ec.setCompanyName("company2");
         organizationsList.add(ec);
         Field list = csvService.getClass().getDeclaredField("organizationsList");
