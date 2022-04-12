@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.spy;
 
+
 @Testcontainers
 class CuCsvServiceTest {
 
@@ -428,9 +429,8 @@ class CuCsvServiceTest {
         
         //precondition
         List<EcConfigEntity> organizationsList = new ArrayList<>();
-        EcConfigEntity ec = new EcConfigEntity();
-        ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode0");
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode0");
+        
         ec.setCompanyName("company");
         ec.setIban("iban");
         organizationsList.add(ec);
@@ -444,6 +444,8 @@ class CuCsvServiceTest {
         p.setId("5");
         p.setAmount(0);
         p.setPaIdFiscalCode("paFiscalCode0");
+        ec.setPaIdIstat("idIstat");
+        ec.setPaIdCatasto("idCatasto");
         payments.add(p);
         List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition("fileName", payments);
         assertNotNull(savedEntities);
