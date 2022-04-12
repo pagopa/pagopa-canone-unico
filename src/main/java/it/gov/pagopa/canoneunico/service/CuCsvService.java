@@ -172,7 +172,7 @@ public class CuCsvService {
 
         List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
 
-        int batchSizeDebtPosTable = 100;
+        int batchSizeDebtPosTable = 25;
         List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileName, payments), batchSizeDebtPosTable);
 
         // save debt positions partition in table
@@ -200,7 +200,7 @@ public class CuCsvService {
         debtPositionMessage.setCsvFilename(fileName);
         debtPositionMessage.setRetryCount(0);
 
-        int batchSizeDebtPosQueue = 100;
+        int batchSizeDebtPosQueue = 25;
         List<List<DebtPositionRowMessage>> msgRows = Lists.partition(this.getDebtPositionQueueMsg(debtPositionEntities), batchSizeDebtPosQueue);
 
         // push debt positions partition in queue
