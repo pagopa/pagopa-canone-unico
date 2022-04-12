@@ -475,15 +475,13 @@ class CuCsvServiceTest {
         //precondition
         // test con un EC censito senza iban nell'ecconfig, il record deve essere inserito in tabella con status SKIPPED (Change request: PPD-145 Enti non aderenti)
         List<EcConfigEntity> organizationsList = new ArrayList<>();
-        EcConfigEntity ec = new EcConfigEntity();
-        ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode");
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
+        ec.setPaIdCatasto("idCatasto");
         ec.setCompanyName("company");
         ec.setIban("iban");
         organizationsList.add(ec);
-        ec = new EcConfigEntity();
-        ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode2");
+        ec = new EcConfigEntity("paFiscalCode2");
+        ec.setPaIdCatasto("idCatasto2");
         ec.setCompanyName("company2");
         organizationsList.add(ec);
         Field list = csvService.getClass().getDeclaredField("organizationsList");
@@ -675,54 +673,15 @@ class CuCsvServiceTest {
         assertNotNull(errorFile);
     }
     
+   
+    
     @Test
     void enrichDebtPositionEntity() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
     	Logger logger = Logger.getLogger("testlogging");
     	var csvService = spy(new CuCsvService(logger));
     	//precondition
         List<EcConfigEntity> organizationsList = new ArrayList<>();
-        EcConfigEntity ec = new EcConfigEntity();
-        ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode");
-        ec.setCompanyName("company");
-        ec.setIban("iban");
-        organizationsList.add(ec);
-        Field list = csvService.getClass().getDeclaredField("organizationsList");
-        list.setAccessible(true); // Suppress Java language access checking
-        list.set(csvService,organizationsList);
-        
-        DebtPositionEntity e = new DebtPositionEntity();
-        e.setPartitionKey("filename_0000.csv");
-        e.setRowKey("1");
-        e.setPaIdFiscalCode("paFiscalCode");
-        e.setDebtorName("name");
-        e.setDebtorEmail("email");
-        e.setAmount("0");
-        e.setPaymentNoticeNumber("iuv");
-        e.setIupd("iupd");
-        e.setDebtorIdFiscalCode("fiscalcode");
-        e.setStatus(Status.INSERTED.toString());
-        
-        assertNull(e.getCompanyName());
-        assertNull(e.getIban());
-        
-        Method m = csvService.getClass().getDeclaredMethod("enrichDebtPositionEntity", DebtPositionEntity.class);
-        m.setAccessible(true);
-        m.invoke(csvService, e);
-        
-        assertEquals("company", e.getCompanyName());
-        assertEquals("iban", e.getIban());
-    }
-    
-    @Test
-    void enrichDebtPositionEntity2() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-    	Logger logger = Logger.getLogger("testlogging");
-    	var csvService = spy(new CuCsvService(logger));
-    	//precondition
-        List<EcConfigEntity> organizationsList = new ArrayList<>();
-        EcConfigEntity ec = new EcConfigEntity();
-        ec.setPartitionKey("org");
-        ec.setRowKey("paFiscalCode");
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
         ec.setPaIdCatasto("idCatasto");
         ec.setCompanyName("company");
         ec.setIban("iban");
