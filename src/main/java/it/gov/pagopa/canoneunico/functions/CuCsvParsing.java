@@ -61,7 +61,7 @@ public class CuCsvParsing {
     		// Check if CSV is valid
     		DebtPositionValidationCsv csvValidation = CsvValidation.checkCsvIsValid(fileName, csvToBean);
 			long endTime = System.currentTimeMillis();
-			logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] parseCsv and checkCsvIsValid executed in [%s] ms", fileName, (endTime - startTime)));
+			logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: parseCsv and checkCsvIsValid executed in [%s] ms", fileName, (endTime - startTime)));
 
     		if (csvValidation.getErrorRows().isEmpty()) {
     			// If valid file -> save on table and write on queue
@@ -72,13 +72,13 @@ public class CuCsvParsing {
 				long startTime1 = System.currentTimeMillis();
 				List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileName, payments);
 				long endTime1 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] saveDebtPositionTable executed in [%s] ms", fileName, (endTime1 - startTime1)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionTable executed in [%s] ms", fileName, (endTime1 - startTime1)));
 
 				// push in queue
 				long startTime2 = System.currentTimeMillis();
 				csvService.pushDebtPosition(fileName, savedEntities);
 				long endTime2 = System.currentTimeMillis();
-				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] saveDebtPositionQueue executed in [%s] ms", fileName, (endTime2 - startTime2)));
+				logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionQueue executed in [%s] ms", fileName, (endTime2 - startTime2)));
 
 				logger.log(Level.INFO, () -> String.format(
     					"[CuCsvParsingFunction END] [%s] execution started at [%s] and ended at [%s]",
