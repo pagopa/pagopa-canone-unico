@@ -48,7 +48,7 @@ public class CuCreateDebtPosition {
             long startTime = System.currentTimeMillis();
 
             var failed = debtPositions.getRows()
-                    .parallelStream()
+                    .stream()
                     .filter(row -> {
                         RetryStep retryStep = createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row, context.getInvocationId());
                         row.setRetryAction(retryStep.name());
@@ -154,6 +154,7 @@ public class CuCreateDebtPosition {
                 // update entity
                 logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 updateTable(filename, logger, row, true, requestId);
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updated table with CREATED status: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 return RetryStep.DONE;
         }
 
