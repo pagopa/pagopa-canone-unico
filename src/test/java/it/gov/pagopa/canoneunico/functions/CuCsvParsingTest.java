@@ -124,6 +124,67 @@ class CuCsvParsingTest {
         verify(cuCsvService, times(1)).parseCsv(data);
         verify(cuCsvService, times(1)).saveDebtPosition("2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
+    
+    @Test
+    void checkParseFileOKTest_noIbanValueInEcConfig() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException, CsvConstraintViolationException {
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
+        String data = readFromInputStream(inputStream);
+
+        Logger logger = Logger.getLogger("testlogging");
+        
+        // mock ecConfig organizations list
+        List<EcConfigEntity> organizationsList = new ArrayList<>();
+        EcConfigEntity ec = new EcConfigEntity("paFiscalCode");
+        ec.setPaIdCatasto("C123");
+        ec.setCompanyName("company");
+        organizationsList.add(ec);
+
+
+        Reader reader = new StringReader(data);
+        // Create Mapping Strategy to arrange the column name
+        HeaderColumnNameMappingStrategy<PaymentNotice> mappingStrategy =
+                new HeaderColumnNameMappingStrategy<>();
+        mappingStrategy.setType(PaymentNotice.class);
+        CsvToBean<PaymentNotice> csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+                .withSeparator(';')
+                .withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+                .withOrderedResults(true)
+                .withMappingStrategy(mappingStrategy)
+                .withVerifier(new PaymentNoticeVerifier(organizationsList))
+                .withType(PaymentNotice.class)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
+        List<PaymentNotice> payments = csvToBean.parse();
+        reader = new StringReader(data);
+        csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+                .withSeparator(';')
+                .withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+                .withOrderedResults(true)
+                .withMappingStrategy(mappingStrategy)
+                .withVerifier(new PaymentNoticeVerifier(organizationsList))
+                .withType(PaymentNotice.class)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
+
+        // precondition
+        when(context.getLogger()).thenReturn(logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+       
+
+        byte[] file = data.getBytes();
+
+        function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+
+        verify(context, times(1)).getLogger();
+        verify(cuCsvService, times(1)).initEcConfigList();
+        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).saveDebtPosition("2021-04-21_pagcorp0007_0101108TS.csv", payments);
+    }
 
     @Test
     void checkParseFileKOTest() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
@@ -161,6 +222,45 @@ class CuCsvParsingTest {
         verify(cuCsvService, times(1)).parseCsv(data);
         verify(cuCsvService, times(1)).uploadCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv", null);
         verify(cuCsvService, times(1)).deleteCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv");
+
+    }
+    
+    @Test
+    void checkParseFileKOTest_noRecordInECConfig() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv");
+        String data = readFromInputStream(inputStream);
+
+        Logger logger = Logger.getLogger("testlogging");
+
+        Reader reader = new StringReader(data);
+        CsvToBean<PaymentNotice> csvToBean = new CsvToBeanBuilder<PaymentNotice>(reader)
+                .withSeparator(';')
+                .withFieldAsNull(CSVReaderNullFieldIndicator.BOTH)
+                .withOrderedResults(true)
+                .withVerifier(new PaymentNoticeVerifier(new ArrayList<>()))
+                .withType(PaymentNotice.class)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
+
+
+        // precondition
+        when(context.getLogger()).thenReturn(logger);
+        doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+
+
+        byte[] file = data.getBytes();
+
+        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", context);
+
+        verify(context, times(1)).getLogger();
+        verify(cuCsvService, times(1)).initEcConfigList();
+        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).uploadCsv("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", null);
+        verify(cuCsvService, times(1)).deleteCsv("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv");
 
     }
 }

@@ -51,7 +51,6 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,6 +70,8 @@ public class CuCsvService {
     private String ecConfigTable = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
     private String debtPositionQueue = System.getenv("DEBT_POSITIONS_QUEUE");
     private Integer segregationCode = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
+    private Integer batchSizeDebtPosQueue = System.getenv("BATCH_SIZE_DEBT_POS_QUEUE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_QUEUE")) : 25;
+    private Integer batchSizeDebtPosTable = System.getenv("BATCH_SIZE_DEBT_POS_TABLE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_TABLE")) : 25;
     private Logger logger;
 
 
@@ -96,7 +97,9 @@ public class CuCsvService {
         this.logger = logger;
     }
 
-    public CuCsvService(String storageConnectionString, String ecConfigTable, Logger logger) {
+    public CuCsvService(String storageConnectionString, String ecConfigTable, int batchSize, Logger logger) {
+        this.batchSizeDebtPosQueue = batchSize;
+        this.batchSizeDebtPosTable = batchSize;
         this.storageConnectionString = storageConnectionString;
         this.ecConfigTable = ecConfigTable;
         this.logger = logger;
@@ -172,7 +175,6 @@ public class CuCsvService {
 
         List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
 
-        int batchSizeDebtPosTable = 100;
         List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileName, payments), batchSizeDebtPosTable);
 
         // save debt positions partition in table
@@ -200,7 +202,6 @@ public class CuCsvService {
         debtPositionMessage.setCsvFilename(fileName);
         debtPositionMessage.setRetryCount(0);
 
-        int batchSizeDebtPosQueue = 100;
         List<List<DebtPositionRowMessage>> msgRows = Lists.partition(this.getDebtPositionQueueMsg(debtPositionEntities), batchSizeDebtPosQueue);
 
         // push debt positions partition in queue
@@ -376,13 +377,15 @@ public class CuCsvService {
             e.setDebtorName(p.getDebtorName());
             e.setDebtorEmail(p.getDebtorEmail());
             e.setAmount(String.valueOf(p.getAmount()));
-            e.setStatus(Status.INSERTED.toString());
+            e.setStatus(Status.INSERTED.name());
             // enrich entity with info from ec_config
             this.enrichDebtPositionEntity(e);
-            // generate iuv and iupd
-            String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
-            e.setPaymentNoticeNumber(iuv);
-            e.setIupd(this.generateIUPD(iuv));
+            // generate iuv and iupd if status is not SKIPPED
+            if (!e.getStatus().equals(Status.SKIPPED.name())) {
+                String iuv = this.getValidIUV(e.getPaIdFiscalCode(), segregationCode, nextVal++);
+                e.setPaymentNoticeNumber(iuv);
+                e.setIupd(this.generateIUPD(iuv));
+            }
 
             debtPositionEntities.add(e);
 
@@ -390,60 +393,55 @@ public class CuCsvService {
         return debtPositionEntities;
     }
 
-    private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
-        if (null == e.getPaIdFiscalCode() || e.getPaIdFiscalCode().isBlank()) {
-            // get extra info by paIdCatasto or paIdIstat
-            Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(
-                            o -> o.getPaIdCatasto().equals(e.getPaIdCatasto()) || o.getPaIdIstat().equals(e.getPaIdIstat()))
-                    .findFirst();
-            if (ecConfig.isEmpty()) {
-                throw new CanoneUnicoException(
-                        "[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = " + e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat());
-            }
+	private void enrichDebtPositionEntity(DebtPositionEntity e) throws CanoneUnicoException {
+		EcConfigEntity ecConfig = organizationsList.stream()
+				.filter(o -> o.getPaIdCatasto().equals(e.getPaIdCatasto())
+						|| o.getPaIdIstat().equals(e.getPaIdIstat()) || o.getRowKey().equals(e.getPaIdFiscalCode()))
+				.findFirst()
+				.orElseThrow(() -> new CanoneUnicoException(
+						"[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdCatasto = "
+								+ e.getPaIdCatasto() + " or paIdIstat = " + e.getPaIdIstat() + " or paFiscalCode = "
+								+ e.getPaIdFiscalCode()));
 
-            e.setPaIdFiscalCode(ecConfig.get().getRowKey());
-            e.setPaIdIstat(ecConfig.get().getPaIdIstat());
-            e.setPaIdCatasto(ecConfig.get().getPaIdCatasto());
-            e.setPaIdCbill(ecConfig.get().getPaIdCbill());
-            e.setPaPecEmail(ecConfig.get().getPaPecEmail());
-            e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
-            e.setPaReferentName(ecConfig.get().getPaReferentName());
-            e.setCompanyName(ecConfig.get().getCompanyName());
-            e.setIban(ecConfig.get().getIban());
-        } else {
-            Optional<EcConfigEntity> ecConfig = organizationsList.stream().filter(o -> o.getRowKey().equals(e.getPaIdFiscalCode())).findFirst();
-            if (ecConfig.isEmpty()) {
-                throw new CanoneUnicoException(
-                        "[CuCsvService] Enrich Payment Info Error: unable to retrieve the ecConfig entity for paIdFiscalCode = " + e.getPaIdFiscalCode());
-            }
+		// convention: skip if iban not present
+		if (null == ecConfig.getIban() || ecConfig.getIban().isEmpty()) {
+			logger.warning(
+					"[CuCsvService] Enrich Payment with ecConfig info: EC [idCatasto=" + ecConfig.getPaIdCatasto()
+							+ "; idIstat=" + ecConfig.getPaIdIstat() + "] is without iban -> set status to SKIPPED");
+			// overwrite the state to skipped
+			e.setStatus(Status.SKIPPED.name());
+			e.setNote(Status.SKIPPED.name());
+		}
+		e.setPaIdFiscalCode(ecConfig.getRowKey());
+		e.setPaIdIstat(ecConfig.getPaIdIstat());
+		e.setPaIdCatasto(ecConfig.getPaIdCatasto());
+		e.setPaIdCbill(ecConfig.getPaIdCbill());
+		e.setPaPecEmail(ecConfig.getPaPecEmail());
+		e.setPaReferentEmail(ecConfig.getPaReferentEmail());
+		e.setPaReferentName(ecConfig.getPaReferentName());
+		e.setCompanyName(ecConfig.getCompanyName());
+		e.setIban(ecConfig.getIban());
 
-            e.setPaIdCbill(ecConfig.get().getPaIdCbill());
-            e.setPaIdIstat(ecConfig.get().getPaIdIstat());
-            e.setPaIdCatasto(ecConfig.get().getPaIdCatasto());
-            e.setPaPecEmail(ecConfig.get().getPaPecEmail());
-            e.setPaReferentEmail(ecConfig.get().getPaReferentEmail());
-            e.setPaReferentName(ecConfig.get().getPaReferentName());
-            e.setCompanyName(ecConfig.get().getCompanyName());
-            e.setIban(ecConfig.get().getIban());
-        }
-    }
+	}
 
     private List<DebtPositionRowMessage> getDebtPositionQueueMsg(List<DebtPositionEntity> debtPositionEntities) {
         List<DebtPositionRowMessage> debtPositionMsgs = new ArrayList<>();
         for (DebtPositionEntity e : debtPositionEntities) {
-            DebtPositionRowMessage row = new DebtPositionRowMessage();
-            row.setId(e.getRowKey());
-            row.setDebtorName(e.getDebtorName());
-            row.setDebtorEmail(e.getDebtorEmail());
-            row.setAmount(Long.parseLong(e.getAmount()));
-            row.setIuv(e.getPaymentNoticeNumber());
-            row.setIupd(e.getIupd());
-            row.setPaIdFiscalCode(e.getPaIdFiscalCode());
-            row.setDebtorIdFiscalCode(e.getDebtorIdFiscalCode());
-            row.setCompanyName(e.getCompanyName());
-            row.setIban(e.getIban());
-            row.setRetryAction(RetryStep.NONE.name());
-            debtPositionMsgs.add(row);
+            if (!e.getStatus().equals(Status.SKIPPED.name())) {
+                DebtPositionRowMessage row = new DebtPositionRowMessage();
+                row.setId(e.getRowKey());
+                row.setDebtorName(e.getDebtorName());
+                row.setDebtorEmail(e.getDebtorEmail());
+                row.setAmount(Long.parseLong(e.getAmount()));
+                row.setIuv(e.getPaymentNoticeNumber());
+                row.setIupd(e.getIupd());
+                row.setPaIdFiscalCode(e.getPaIdFiscalCode());
+                row.setDebtorIdFiscalCode(e.getDebtorIdFiscalCode());
+                row.setCompanyName(e.getCompanyName());
+                row.setIban(e.getIban());
+                row.setRetryAction(RetryStep.NONE.name());
+                debtPositionMsgs.add(row);
+            }
         }
         return debtPositionMsgs;
     }
