@@ -154,6 +154,7 @@ public class CuCreateDebtPosition {
                 // update entity
                 logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 updateTable(filename, logger, row, true, requestId);
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updated table with CREATED status: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 row.setRetryAction(RetryStep.DONE.name());
                 return RetryStep.DONE;
         }
