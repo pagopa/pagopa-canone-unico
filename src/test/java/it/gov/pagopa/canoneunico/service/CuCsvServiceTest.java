@@ -550,6 +550,36 @@ class CuCsvServiceTest {
     }
     
     @Test
+    void pushDebtPositionSkipped() throws InvalidKeyException, URISyntaxException, StorageException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "queue", logger));
+        
+        CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).createCloudQueueClient()
+                .getQueueReference("queue");
+        queue.createIfNotExists();
+        
+        List<DebtPositionEntity> savedEntities = new ArrayList<>();
+        DebtPositionEntity e = new DebtPositionEntity();
+        e.setPartitionKey("filename_0000.csv");
+        e.setRowKey("1");
+        e.setDebtorName("name");
+        e.setDebtorEmail("email");
+        e.setAmount("0");
+        e.setPaymentNoticeNumber("iuv");
+        e.setIupd("iupd");
+        e.setDebtorIdFiscalCode("fiscalcode");
+        e.setCompanyName("companyname");
+        e.setIban("iban");
+        e.setStatus(Status.SKIPPED.toString());
+        savedEntities.add(e);
+
+        boolean isAllPushed = csvService.pushDebtPosition("filename_0000.csv", savedEntities);
+        assertTrue(isAllPushed);
+        
+    }
+    
+    @Test
     void addDebtPositionEntityList() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
 
