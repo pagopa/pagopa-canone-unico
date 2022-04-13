@@ -48,7 +48,7 @@ public class CuCreateDebtPosition {
             long startTime = System.currentTimeMillis();
 
             var failed = debtPositions.getRows()
-                    .parallelStream()
+                    .stream()
                     .filter(row -> {
                         RetryStep retryStep = createAndPublishDebtPosition(debtPositions.getCsvFilename(), logger, row, context.getInvocationId());
                         row.setRetryAction(retryStep.name());
