@@ -65,7 +65,10 @@ public class DebtPositionService {
 
         BlobContainerClient client = blobServiceClient.getBlobContainerClient(this.containerBlobIn);
 
-        return client.listBlobs().stream().map(BlobItem::getName).collect(Collectors.toList());
+        return client.listBlobs()
+                .stream()
+                .map(BlobItem::getName)
+                .collect(Collectors.toList());
     }
 
     public List<List<List<String>>> getDebtPositionListByPk(List<String> pks)
@@ -86,15 +89,23 @@ public class DebtPositionService {
                             String stateFilterCreated =
                                     TableQuery.generateFilterCondition(
                                             STATUS, TableQuery.QueryComparisons.EQUAL, Status.CREATED.toString());
+                            String stateFilterSkipped =
+                                    TableQuery.generateFilterCondition(
+                                            STATUS, TableQuery.QueryComparisons.EQUAL, Status.SKIPPED.toString());
                             String stateFilterInserted =
                                     TableQuery.generateFilterCondition(
                                             STATUS, TableQuery.QueryComparisons.EQUAL, Status.INSERTED.toString());
                             String stateFilterError =
                                     TableQuery.generateFilterCondition(
                                             STATUS, TableQuery.QueryComparisons.EQUAL, Status.ERROR.toString());
+
                             String combinedFilterCreated =
                                     TableQuery.combineFilters(
-                                            partitionFilter, TableQuery.Operators.AND, stateFilterCreated);
+                                            stateFilterCreated, TableQuery.Operators.OR, stateFilterSkipped);
+                            String combinedFilterOk =
+                                    TableQuery.combineFilters(
+                                            partitionFilter, TableQuery.Operators.AND, combinedFilterCreated);
+
                             String combinedFilterInsertedOrError =
                                     TableQuery.combineFilters(
                                             stateFilterInserted, TableQuery.Operators.OR, stateFilterError);
@@ -120,7 +131,7 @@ public class DebtPositionService {
 
                             for (DebtPositionEntity entity :
                                     table.execute(
-                                            TableQuery.from(DebtPositionEntity.class).where(combinedFilterCreated))) {
+                                            TableQuery.from(DebtPositionEntity.class).where(combinedFilterOk))) {
                                 List<String> rowsItem = new ArrayList<>();
                                 Collections.addAll(
                                         rowsItem,
