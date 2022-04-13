@@ -9,6 +9,8 @@
       "ERROR_CSV_BLOB":"error",
       "DEBT_POSITIONS_QUEUE":"debtposqueue",
       "DEBT_POSITIONS_TABLE":"debtpostable",
+      "BATCH_SIZE_DEBT_POS_QUEUE": 75,
+      "BATCH_SIZE_DEBT_POS_TABLE": 75,
       "ORGANIZATIONS_CONFIG_TABLE":"organizationstable",
       "IUVS_TABLE":"iuvstable",
       "IUV_GENERATION_TYPE":"rnd",

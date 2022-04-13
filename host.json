@@ -4,6 +4,7 @@
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[2.*, 3.0.0)"
   },
+  "functions": [ "CuCsvParsingFunction" ],
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
