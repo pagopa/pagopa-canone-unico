@@ -147,7 +147,7 @@ public class DebtPositionService {
                                         deNull(entity.getDebtorIdFiscalCode()),
                                         deNull(entity.getDebtorName()),
                                         deNull(entity.getDebtorEmail()),
-                                        CU_AUX_DIGIT + entity.getPaymentNoticeNumber(),  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
+                                        entity.getPaymentNoticeNumber() != null ? CU_AUX_DIGIT + entity.getPaymentNoticeNumber() : "",  // <AugDigit><codice segregazione(2n)><IUV base(13n)><IUV check digit(2n)>
                                         deNull(entity.getNote()));
                                 rowsList.add(rowsItem);
                             }
