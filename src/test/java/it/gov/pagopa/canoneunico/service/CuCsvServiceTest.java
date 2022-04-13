@@ -642,6 +642,32 @@ class CuCsvServiceTest {
     }
     
     @Test
+    void getValidIUVSeq() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+        Logger logger = Logger.getLogger("testlogging");
+        
+        
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
+        
+        Field list = csvService.getClass().getDeclaredField("iuvGenerationType");
+        list.setAccessible(true); // Suppress Java language access checking
+        list.set(csvService,"seq");
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("iuv");
+        table.createIfNotExists();
+        
+        String iuv = csvService.getValidIUV("fiscal-code", 47, 1);
+        assertNotNull(iuv); 
+        assertEquals(17, iuv.getBytes().length);
+        
+    }
+    
+    @Test
     void generateIncrementalIUV() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
         var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));        
