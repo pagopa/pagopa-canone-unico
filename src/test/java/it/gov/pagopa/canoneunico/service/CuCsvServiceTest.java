@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 import java.io.ByteArrayInputStream;
@@ -659,11 +661,44 @@ class CuCsvServiceTest {
         tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
         cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
         CloudTable table = cloudTableClient.getTableReference("iuv");
-        table.createIfNotExists();
+        try {
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        	table.delete();
+        	table.createIfNotExists();
+        }
         
         String iuv = csvService.getValidIUV("fiscal-code", 47, 1);
         assertNotNull(iuv); 
         assertEquals(17, iuv.getBytes().length);
+        
+    }
+    
+    @Test
+    void getValidIUVRetry() throws InvalidKeyException, URISyntaxException, StorageException, CanoneUnicoException {
+        Logger logger = Logger.getLogger("testlogging");
+
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "iuv", "47", logger));
+        
+        doThrow(InvalidKeyException.class).when(csvService).checkIUVExistence(any());
+        
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
+        TableRequestOptions tableRequestOptions = new TableRequestOptions();
+        tableRequestOptions.setRetryPolicyFactory(RetryNoRetry.getInstance());
+        cloudTableClient.setDefaultRequestOptions(tableRequestOptions);
+        CloudTable table = cloudTableClient.getTableReference("iuv");
+        try {
+            table.createIfNotExists();
+        } catch (Exception e) {
+        	logger.info("Table already exist");
+        	table.delete();
+        	table.createIfNotExists();
+        }
+        
+        assertThrows (CanoneUnicoException.class, ()->csvService.getValidIUV("fiscal-code", 47, 1), "");  
+        
         
     }
     
