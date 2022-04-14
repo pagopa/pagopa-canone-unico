@@ -186,7 +186,7 @@ public class CuCreateDebtPosition {
                                 .idTransfer("1")
                                 .amount(row.getAmount())
                                 .remittanceInformation("Canone Unico Patrimoniale - CORPORATE")
-                                .category("0201138TS")
+                                .category("0101108TS")
                                 .iban(row.getIban())
                                 .build()))
                         .build()))
