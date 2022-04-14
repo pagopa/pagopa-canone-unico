@@ -295,14 +295,20 @@ class DebtPositionServiceIntegrationTest {
 
         List<List<String>> dataLines = new ArrayList<>();
         List<String> row1 = new ArrayList<>();
-        row1.add("attr1");
+        row1.add("1");
         row1.add("attr2");
         row1.add("attr3");
         List<String> row2 = new ArrayList<>();
-        row2.add("attr1");
+        row2.add("2");
         row2.add("attr2");
         row2.add("attr3");
+        List<String> row3 = new ArrayList<>();
+        row3.add("attr1");
+        row3.add("attr2");
+        row3.add("attr3");
+
         dataLines.add(row1);
+        dataLines.add(row3);
         dataLines.add(row2);
 
         debtPositionService.uploadOutFile(csvFileName, dataLines);

@@ -13,6 +13,7 @@ import com.microsoft.azure.storage.table.TableQuery;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.entity.Status;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +23,7 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
@@ -171,9 +173,15 @@ public class DebtPositionService {
 
         File csvOutputFile = new File(csvFileName);
 
-        dataLines.add(0, List.of(CSV_HEAD.split(";")));
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            pw.println(CSV_HEAD);
             dataLines.stream()
+                    .filter(row -> StringUtils.isNumeric(row.get(0)))
+                    .sorted(Comparator.comparing(a -> Integer.valueOf(a.get(0))))
+                    .map(this::convertToCSV)
+                    .forEach(pw::println);
+            dataLines.stream()
+                    .filter(row -> !StringUtils.isNumeric(row.get(0)))
                     .map(this::convertToCSV)
                     .forEach(pw::println);
         }
