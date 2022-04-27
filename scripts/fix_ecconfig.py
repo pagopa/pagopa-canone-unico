@@ -28,7 +28,7 @@ if env == "local":
     table_name = args.table_name or "ecconfig"
 else:
     account_name = "pagopa{}canoneunicosa".format(env[0])
-    table_name = args.table_name or "pagopa{}canoneunicosaecconfigtableF".format(env[0])
+    table_name = args.table_name or "pagopa{}canoneunicosaecconfigtable".format(env[0])
     endpoint = "https://{}.table.core.windows.net/".format(account_name)
 
 print([env, account_name, endpoint, table_name], sep="|")
