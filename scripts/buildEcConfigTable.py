@@ -2,8 +2,6 @@ import argparse
 import csv
 import re
 import os
-import operator
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -29,10 +27,14 @@ def load_table(filename, separator, key, val):
     print("load_table|file loaded")
     return tab
 
+# ######## set the date format to "%Y-%m-%d" for sorted algorithm ########
 def format_date(dateToFromat, sep):
+    # sometimes the iban is not specified, in order to properly sort the date
+    # it's setted to "1900-01-01"
     if not len(dateToFromat) > 0:
         print(">>>>>>> empty iban date")
         return datetime(1900, 1, 1)
+    
     tkDate = dateToFromat.split(sep)
     return datetime(int(tkDate[2]), int(tkDate[1]), int(tkDate[0]))
 
