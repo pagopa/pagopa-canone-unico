@@ -38,13 +38,56 @@ def format_date(dateToFromat, sep):
     tkDate = dateToFromat.split(sep)
     return datetime(int(tkDate[2]), int(tkDate[1]), int(tkDate[0]))
 
+# #################### Compute CUP iban export from PDND #####################
+# 1. Load the file
+# 2. Map the iban(s) to CI fiscal code
+# 3. Sort the iban on activation date
+# ###########################################################################
+def load_iban_table_cup(filePath):
+    print("load_iban_table_cup|loading file [" + filePath + "]")
+    filename = open(filePath, 'r')
+    file = csv.reader(filename, delimiter=';')
+    next(file, None)
+
+    # creating empty dictionary
+    tab = {}
+
+    # iterating over each row
+    print("load_iban_table_cup|Cycling over file rows")
+    for row in file:
+        # check if fiscalcode entry already exists
+        if not row[1] in tab: # the dicationary does not exist
+            tab[row[1]] = [{'fiscalCode': row[1], 'iban': row[2], 'actDate': row[6]}]
+        else:
+            el = tab[row[1]]
+            el.append({'fiscalCode': row[1], 'iban': row[2], 'actDate': row[6]})
+    
+    # sort iban list belonging to each CI
+    print("load_iban_table_cup|sort dict by iban activation date")
+    markedIbanCount = 0
+    for fiscalCode in tab:
+        ibanList = tab[fiscalCode]
+        # sort the iban list by date, first reverse = false  because in case of more than one checked
+        # iban we wat to keep the last activated one
+        ibanList = sorted(ibanList, key=lambda d: d['actDate'], reverse=True)
+
+        if len(ibanList) > 0:
+            # keep the last activated iban so we need to sort reverse the list
+            tab[fiscalCode] = ibanList[0]
+        else:
+            # no active iban were present for EC set dict to empty
+            tab[fiscalCode] = {}
+
+    print("load_iban_table_cup|iban file elaborated")
+    return tab
+
 # #################### Compute CI iban export csv file #####################
 # 1. Load the file
 # 2. Map the iban(s) to CI fiscal code
 # 3. Sort the iban on activation date
 # 4. Filter for eventual CUP label or alternatively on last activation date
 # ###########################################################################
-def load_iban_table(filePath, cupLabel):
+def load_iban_table(filePath, cupIbanTable):
     print("load_iban_table|loading file [" + filePath + "]")
     filename = open(filePath, 'r')
     file = csv.reader(filename, delimiter=';')
@@ -77,20 +120,13 @@ def load_iban_table(filePath, cupLabel):
         # iban we wat to keep the last activated one
         ibanList = sorted(ibanList, key=lambda d: format_date(d['actDate'], '/'), reverse=True)
 
-        # iterate over the iban list looking for the CUP flag
-        rightIban = {}
-        for row in ibanList:
-            if re.search(cupLabel, row['desc'], re.IGNORECASE):
-                # found iban marked from EC
-                rightIban = row
-                markedIbanCount += 1
-
-        # if checked iban found
-        if bool(rightIban):
+        # check if CUP iban exixts
+        if fiscalCode in cupIbanTable:
             # put into the dictionary
-            tab[fiscalCode] = rightIban
+            tab[fiscalCode] = cupIbanTable[fiscalCode]
+            markedIbanCount += 1
         else:
-            # no choise from CI, check if almost one iban is present
+            # no cup choise, check if almost one iban is present
             if len(ibanList) > 0:
                 # keep the last activated iban so we need to sort reverse the list
                 tab[fiscalCode] = ibanList[0]
@@ -141,6 +177,7 @@ def build_config_table(filePath, ibanTable, statsTable, ipaTable):
         if paIdCatasto in statsTable:        
             paIdIstat = statsTable[paIdCatasto]
         else: 
+            
             paIdIstat = "N/A"
             noIstatCodeCount += 1
             #print("paIdIstat not found for EC: " + line[2])
@@ -224,11 +261,27 @@ def load_config_table(env, ecTable):
     
     print("load_config_table|record inserted: " + str(recordCount))
 
+# ######## Add missing CF to table (CI not configured on pagoPA platform) #########################
+def load_missing_ci(ecTable):
+
+    ecTable.append({"PartitionKey": "org", "RowKey": "84000730659", "Timestamp": "2022-04-14T20:04:32.7313004Z", "CompanyName": "Comune di Ascea", "Iban": "", "PaIdCatasto": "A460", "PaIdCbill": "n.a", "PaIdIstat": "065009", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "00747990166", "Timestamp": "2022-04-14T20:04:32.8302442Z", "CompanyName": "Comune di Brumano", "Iban": "", "PaIdCatasto": "B217", "PaIdCbill": "n.a", "PaIdIstat": "016041", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "80001270943", "Timestamp": "2022-04-14T20:04:33.042124Z", "CompanyName": "Comune di Conca Casale", "Iban": "", "PaIdCatasto": "C941", "PaIdCbill": "n.a", "PaIdIstat": "094018", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "82001730694", "Timestamp": "2022-04-14T20:04:33.1460649Z", "CompanyName": "Comune di Crecchio", "Iban": "", "PaIdCatasto": "D137", "PaIdCbill": "n.a", "PaIdIstat": "069027", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "00371570797", "Timestamp": "2022-04-14T20:04:33.2390123Z", "CompanyName": "Comune di Filogaso", "Iban": "", "PaIdCatasto": "D596", "PaIdCbill": "n.a", "PaIdIstat": "102013", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "81002200160", "Timestamp": "2022-04-14T20:04:33.3409549Z", "CompanyName": "Comune di Monasterolo del Castello", "Iban": "", "PaIdCatasto": "F328", "PaIdCbill": "n.a", "PaIdIstat": "016137", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "81000890780", "Timestamp": "2022-04-14T20:04:33.5668259Z", "CompanyName": "Comune di Nocara", "Iban": "", "PaIdCatasto": "F907", "PaIdCbill": "n.a", "PaIdIstat": "078086", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "00125240598", "Timestamp": "2022-04-14T20:04:33.6807614Z", "CompanyName": "Comune di Norma", "Iban": "", "PaIdCatasto": "F937", "PaIdCbill": "n.a", "PaIdIstat": "059016", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "90002510619", "Timestamp": "2022-04-14T20:04:33.7817038Z", "CompanyName": "Comune di Orta di Atella", "Iban": "", "PaIdCatasto": "G130", "PaIdCbill": "n.a", "PaIdIstat": "061053", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "80009710643", "Timestamp": "2022-04-14T20:04:33.8786499Z", "CompanyName": "Comune di Roccabascerana", "Iban": "", "PaIdCatasto": "H382", "PaIdCbill": "n.a", "PaIdIstat": "064078", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})
+    ecTable.append({"PartitionKey": "org", "RowKey": "81000610618", "Timestamp": "2022-04-14T20:04:33.9935851Z", "CompanyName": "Comune di Villa Literno", "Iban": "", "PaIdCatasto": "L844", "PaIdCbill": "n.a", "PaIdIstat": "061099", "PaPecEmail": "n.a", "PaReferentEmail": "n.a", "PaReferentName": "n.a"})  
+
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--ec', type=Path, required=True, help='Path to the \'enti\' CSV file.')
 parser.add_argument('--iban', type=Path, required=True, help='Path to the \'iban\' CSV file.')
+parser.add_argument('--ibanCUP', type=Path, required=True, help='Path to the CSV file with iban marked as CUP.')
 parser.add_argument('--ipa', type=Path, required=True, help='Path to the \'ipa\' CSV file.')
 parser.add_argument('--istat', type=Path, required=True, help='Path to the \'istat\' CSV file.')
 parser.add_argument('--env', type=str, required=True, choices=['local', 'd', 'u', 'p'],
@@ -241,14 +294,19 @@ args = parser.parse_args()
 # retrieve the base path dir to deal with input/output file
 dirname = os.path.dirname(__file__)
 
+ibanCupTable = load_iban_table_cup(f'{dirname}{args.ibanCUP}')
+
 # load iban table
-ibanTable = load_iban_table(f'{dirname}{args.iban}', "canone unico")
+ibanTable = load_iban_table(f'{dirname}{args.iban}', ibanCupTable)
 # load ipa table
 ipaTable = load_table(f'{dirname}{args.ipa}', ';', 3, 8)
 # load statistics table
 statsTable = load_table(f'{dirname}{args.istat}', ';', 19, 4)
 # build config table in memory 
 ecTable = build_config_table(f'{dirname}{args.ec}', ibanTable, statsTable, ipaTable)
+
+# Add missing CF to table (CI not configured on pagoPA platform)
+load_missing_ci(ecTable)
 
 # write config table to csv
 write_csv_table(dirname + "/outputData/ecConfigTable.csv", ecTable)
