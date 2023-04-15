@@ -38,6 +38,24 @@ def format_date(dateToFromat, sep):
     tkDate = dateToFromat.split(sep)
     return datetime(int(tkDate[2]), int(tkDate[1]), int(tkDate[0]))
 
+# ## load idIstat, description and idCatasto from istat table ##############
+def load_istat_table(filePath):
+    print("load_istat_table|loading file [" + filePath + "]")
+    filename = open(filePath, 'r')
+    file = csv.reader(filename, delimiter=';')
+    next(file, None)
+
+    # creating empty dictionary
+    tab = {}
+
+    # iterating over each row
+    print("load_istat_table|Cycling over file rows")
+    for row in file:
+        tab[row[19]] = [{'companyName': row[5], 'idIstat': row[4]}]
+
+    print("load_istat_table|iban file elaborated")
+    return tab
+
 # #################### Compute CUP iban export from PDND #####################
 # 1. Load the file
 # 2. Map the iban(s) to CI fiscal code
@@ -149,10 +167,20 @@ def build_config_table(filePath, ibanTable, statsTable, ipaTable):
     next(file, None)
 
     table = []
-
+    
+    newIstatTable = []
+    keyList = list(statsTable.keys())
+    for key in keyList:
+        newIstatTable.append({"idCatasto": key, 
+            "companyName": statsTable[key][0]['companyName'],
+            "idIstat": statsTable[key][0]['idIstat']})
+            
     print("build_config_table|cycling over file rows")
     noIbanCount = 0
     noIstatCodeCount = 0
+    #recoveredIstatCodeCount = 0
+    #recoveredWrongIstatTable = 0
+
     for line in file:
         #reset values
         iban = ""
@@ -175,12 +203,17 @@ def build_config_table(filePath, ibanTable, statsTable, ipaTable):
 
         # match id catasto export_ec -> Codici-statistici-e-denominazioni-al-17_01_2023
         if paIdCatasto in statsTable:        
-            paIdIstat = statsTable[paIdCatasto]
+            paIdIstat = statsTable[paIdCatasto][0]['idIstat']
         else: 
-            
             paIdIstat = "N/A"
             noIstatCodeCount += 1
-            #print("paIdIstat not found for EC: " + line[2])
+
+            # try to recover istat code
+            #for row in newIstatTable:
+            #    cName = row['companyName']
+            #    if cName in line[0]:
+            #        paIdIstat = row['idIstat']
+            #        recoveredIstatCodeCount += 1
 
        # setting up the dictionary record 
         tableRecord = { 'PartitionKey': 'org', 
@@ -198,8 +231,21 @@ def build_config_table(filePath, ibanTable, statsTable, ipaTable):
         # add line to table 
         table.append(tableRecord)
 
+    #for line in table:
+    #    cName = line['CompanyName']
+    #    for el in wrongIstatTable:
+    #        wName = el
+    #        if wName.lower() in cName.lower():
+    #            for row in newIstatTable:
+    #                if row['companyName'].lower() in cName.lower():
+    #                    line['PaIdIstat'] = row['idIstat']
+    #                    line['PaIdCatasto'] = row['idCatasto']
+        
+
     print("build_config_table|CI without iban match: " + str(noIbanCount))
     print("build_config_table|CI without istat code match: " + str(noIstatCodeCount))
+    #print("build_config_table|istat code recovered: " + str(recoveredIstatCodeCount))
+    #print("build_config_table|wrong istat code recovered: " + str(recoveredWrongIstatTable))
     print("build_config_table|Table created")
 
     return table
@@ -300,10 +346,16 @@ ibanCupTable = load_iban_table_cup(f'{dirname}{args.ibanCUP}')
 ibanTable = load_iban_table(f'{dirname}{args.iban}', ibanCupTable)
 # load ipa table
 ipaTable = load_table(f'{dirname}{args.ipa}', ';', 3, 8)
+
 # load statistics table
-statsTable = load_table(f'{dirname}{args.istat}', ';', 19, 4)
+#statsTable = load_table(f'{dirname}{args.istat}', ';', 19, 4)
+statsTable = load_istat_table(f'{dirname}{args.istat}')
+
 # build config table in memory 
-ecTable = build_config_table(f'{dirname}{args.ec}', ibanTable, statsTable, ipaTable)
+ecTable = build_config_table(f'{dirname}{args.ec}', 
+                             ibanTable, 
+                             statsTable, 
+                             ipaTable)
 
 # Add missing CF to table (CI not configured on pagoPA platform)
 load_missing_ci(ecTable)
