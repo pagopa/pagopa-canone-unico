@@ -9,8 +9,6 @@
       "ERROR_CSV_BLOB":"error",
       "DEBT_POSITIONS_QUEUE":"debtposqueue",
       "DEBT_POSITIONS_TABLE":"debtpostable",
-      "DEBT_POSITIONS_DUE_DATE":"2024-04-30T23:59:59.999Z",
-      "DEBT_POSITIONS_IUV_PREFIX":"CU_2023_",
       "BATCH_SIZE_DEBT_POS_QUEUE": 75,
       "BATCH_SIZE_DEBT_POS_TABLE": 75,
       "ORGANIZATIONS_CONFIG_TABLE":"organizationstable",
