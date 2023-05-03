@@ -72,6 +72,7 @@ public class CuCsvService {
     private Integer segregationCode = NumberUtils.toInt(System.getenv("CU_SEGREGATION_CODE"));
     private Integer batchSizeDebtPosQueue = System.getenv("BATCH_SIZE_DEBT_POS_QUEUE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_QUEUE")) : 25;
     private Integer batchSizeDebtPosTable = System.getenv("BATCH_SIZE_DEBT_POS_TABLE") != null ? NumberUtils.toInt(System.getenv("BATCH_SIZE_DEBT_POS_TABLE")) : 25;
+    private final String debPositionsIuvPrefix = System.getenv("DEBT_POSITIONS_IUV_PREFIX");
     private Logger logger;
 
 
@@ -437,7 +438,7 @@ public class CuCsvService {
     }
 
     private String generateIUPD(String iuv) {
-        return "CU_2022_" + iuv;
+        return debPositionsIuvPrefix + iuv;
     }
 
 }
