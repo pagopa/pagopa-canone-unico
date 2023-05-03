@@ -26,7 +26,6 @@ public class CuCreateDebtPosition {
 
     private final String maxAttempts = System.getenv("MAX_ATTEMPTS");
 
-
     /**
      * This function will be invoked when a new message is detected in the queue
      */
@@ -181,7 +180,7 @@ public class CuCreateDebtPosition {
                         .amount(row.getAmount())
                         .description("Canone Unico Patrimoniale - CORPORATE")
                         .isPartialPayment(false)
-                        .dueDate("2023-04-30T23:59:59.999Z")
+                        .dueDate("2024-04-30T23:59:59.999Z")
                         .transfer(List.of(Transfer.builder()
                                 .idTransfer("1")
                                 .amount(row.getAmount())
