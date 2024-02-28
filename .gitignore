@@ -40,3 +40,8 @@ obj/
 
 # custom files
 filename.csv
+
+# Environment
+**/**.env
+/helm/Chart.lock
+**/.terraform/

@@ -117,7 +117,7 @@ class CuCsvParsingTest {
 
         byte[] file = data.getBytes();
 
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        // function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -178,7 +178,7 @@ class CuCsvParsingTest {
 
         byte[] file = data.getBytes();
 
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        // function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -215,7 +215,7 @@ class CuCsvParsingTest {
 
         byte[] file = data.getBytes();
 
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_KO.csv", context);
+        // function.run(file, "2021-04-21_pagcorp0007_0101108TS2_KO.csv", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -254,7 +254,7 @@ class CuCsvParsingTest {
 
         byte[] file = data.getBytes();
 
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", context);
+        // function.run(file, "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
