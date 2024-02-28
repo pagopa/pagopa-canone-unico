@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-
 from azure.data.tables import TableServiceClient
 from azure.core.credentials import AzureNamedKeyCredential
 
@@ -151,7 +150,6 @@ def load_iban_table(filePath, cupIbanTable):
             else:
                 # no active iban were present for EC set dict to empty
                 tab[fiscalCode] = {}
-
     print("load_iban_table|found " + str(markedIbanCount) + " IBAN marked as CUP")
     print("load_iban_table|iban file elaborated")
     return tab

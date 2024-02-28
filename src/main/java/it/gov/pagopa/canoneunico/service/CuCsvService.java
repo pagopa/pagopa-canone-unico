@@ -437,7 +437,7 @@ public class CuCsvService {
     }
 
     private String generateIUPD(String iuv) {
-        return "CU_2022_" + iuv;
+        return "CU_2023_" + iuv;
     }
 
 }
