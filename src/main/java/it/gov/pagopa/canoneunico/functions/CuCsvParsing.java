@@ -33,7 +33,7 @@ public class CuCsvParsing {
     private static final String LOG_VALIDATION_PREFIX = "[CuCsvParsingFunction Error] Validation Error: ";
     private static final String LOG_VALIDATION_ERROR_HEADER = "Error during csv validation {filename = %s; nLinesError/nTotLines = %s}";
     private static final String LOG_VALIDATION_ERROR_DETAIL = "{line = %s } - {errors = %s}";
-    private static final String INPUT_CONTAINER_NAME = "pagopadcanoneunicosaincsvcontainer"; // TODO TBD
+    private static final String INPUT_CONTAINER_NAME = "input";
 
     /**
      * This function will be invoked when a new or updated blob is detected at the
