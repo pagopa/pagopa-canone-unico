@@ -55,10 +55,8 @@ public class CuCsvParsing {
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
                             start, fileName));
 
-            // read events and download blob and convert to String type
-            BinaryData content = new AzuriteStorageUtil().downloadBlob(context, corporate, INPUT_CONTAINER_NAME + "/" + fileName);
-            if(content == null)
-                throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", corporate, fileName));
+            // get byte content and convert to String type
+            BinaryData content = getContent(context, corporate, fileName);
             String converted = new String(content.toBytes(), StandardCharsets.UTF_8);
 
             // initialize csvService and info from ecConfig
@@ -81,8 +79,16 @@ public class CuCsvParsing {
         }
     }
 
+    // return downloaded blob
+    public BinaryData getContent(ExecutionContext context, String corporate, String fileName) throws CanoneUnicoException {
+        BinaryData content = new AzuriteStorageUtil().downloadBlob(context, corporate, INPUT_CONTAINER_NAME + "/" + fileName);
+        if(content == null)
+            throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", corporate, fileName));
+        return content;
+    }
+
     // return data: [container-name, filename]
-    private ArrayList<String> getDataFromEvent(ExecutionContext context, String events) throws CanoneUnicoException {
+    public ArrayList<String> getDataFromEvent(ExecutionContext context, String events) throws CanoneUnicoException {
         Logger logger = context.getLogger();
         List<EventGridEvent> eventGridEvents = EventGridEvent.fromString(events);
 

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import com.azure.core.util.BinaryData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -109,15 +110,19 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        ArrayList<String> eventData = new ArrayList<>(); // data: [container-name, filename]
+        eventData.add("corp");
+        eventData.add("2021-04-21_pagcorp0007_0101108TS.csv");
+
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, "corp", "2021-04-21_pagcorp0007_0101108TS.csv");
+        doReturn(eventData).when(function).getDataFromEvent(context, "events");
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
-       
 
-        byte[] file = data.getBytes();
-
-        // function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -170,15 +175,19 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        ArrayList<String> eventData = new ArrayList<>(); // data: [container-name, filename]
+        eventData.add("corp");
+        eventData.add("2021-04-21_pagcorp0007_0101108TS.csv");
+
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, "corp", "2021-04-21_pagcorp0007_0101108TS.csv");
+        doReturn(eventData).when(function).getDataFromEvent(context, "events");
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
-       
 
-        byte[] file = data.getBytes();
-
-        // function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -206,16 +215,19 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        ArrayList<String> eventData = new ArrayList<>(); // data: [container-name, filename]
+        eventData.add("corp");
+        eventData.add("2021-04-21_pagcorp0007_0101108TS2_KO.csv");
 
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, "corp", "2021-04-21_pagcorp0007_0101108TS2_KO.csv");
+        doReturn(eventData).when(function).getDataFromEvent(context, "events");
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
 
-
-        byte[] file = data.getBytes();
-
-        // function.run(file, "2021-04-21_pagcorp0007_0101108TS2_KO.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
@@ -245,16 +257,19 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        ArrayList<String> eventData = new ArrayList<>(); // data: [container-name, filename]
+        eventData.add("corp");
+        eventData.add("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv");
 
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, "corp", "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv");
+        doReturn(eventData).when(function).getDataFromEvent(context, "events");
         when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
 
-
-        byte[] file = data.getBytes();
-
-        // function.run(file, "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
