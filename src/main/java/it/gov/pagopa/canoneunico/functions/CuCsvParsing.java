@@ -48,28 +48,33 @@ public class CuCsvParsing {
         try {
             ArrayList<String> data = getDataFromEvent(context, events);
             String corporate = data.get(0);
-            String fileName = data.get(1);
+            String blob = data.get(1);
 
             LocalDateTime start = LocalDateTime.now();
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
-                            start, fileName));
+                            start, blob));
 
             // get byte content and convert to String type
-            BinaryData content = getContent(context, corporate, fileName);
+            BinaryData content = getContent(context, corporate, blob);
             String converted = new String(content.toBytes(), StandardCharsets.UTF_8);
 
             // initialize csvService and info from ecConfig
             CuCsvService csvService = this.getCuCsvServiceInstance(logger);
             csvService.initEcConfigList();
-            DebtPositionValidationCsv csvValidation = validateCsv(fileName, logger, csvService, converted);
+            DebtPositionValidationCsv csvValidation = validateCsv(blob, logger, csvService, converted);
 
+            String fileKey = blob;                              // old CUP logic
+            if (blob.contains(INPUT_CONTAINER_NAME + "/")) {    // new CUP logic
+                // concatenation between container and blob name to create unique key: corp_blob
+                fileKey = corporate.concat("_").concat(blob.replace(INPUT_CONTAINER_NAME + "/", ""));
+            }
             if (csvValidation.getErrorRows().isEmpty()) {
                 // If valid file -> save on table and write on queue
-                handleValidFile(fileName, logger, start, csvService, csvValidation);
+                handleValidFile(fileKey, logger, start, csvService, csvValidation);
             } else {
                 // If not valid file -> write log error, save on 'error' blob space and delete from 'input' blob space
-                handleInvalidFile(fileName, logger, start, csvService, converted, csvValidation);
+                handleInvalidFile(fileKey, logger, start, csvService, converted, csvValidation);
             }
 
             Runtime.getRuntime().gc();
@@ -80,10 +85,10 @@ public class CuCsvParsing {
     }
 
     // return downloaded blob
-    public BinaryData getContent(ExecutionContext context, String corporate, String fileName) throws CanoneUnicoException {
-        BinaryData content = new AzuriteStorageUtil().downloadBlob(context, corporate, INPUT_CONTAINER_NAME + "/" + fileName);
+    public BinaryData getContent(ExecutionContext context, String corporate, String blob) throws CanoneUnicoException {
+        BinaryData content = new AzuriteStorageUtil().downloadBlob(context, corporate, blob);
         if(content == null)
-            throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", corporate, fileName));
+            throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", corporate, blob));
         return content;
     }
 
@@ -108,14 +113,14 @@ public class CuCsvParsing {
         }
 
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Blob event subject: %s", context.getInvocationId(), event.getSubject()));
-        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_CONTAINER_NAME+"/([\\w-]+\\.csv)");
+        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/([\\w-/]+\\.csv)");
         Matcher matcher = pattern.matcher(event.getSubject());
 
         // Check if the pattern is found
         if (matcher.find()) {
             ArrayList<String> data = new ArrayList<>();
-            data.add(matcher.group(1)); // corporate container as corporate_id
-            data.add(matcher.group(2)); // filename
+            data.add(matcher.group(1)); // corporate container
+            data.add(matcher.group(2)); // blob
             return data;
         } else {
             throw new CanoneUnicoException("[CuCsvParsing] Wrong match in subject: " + event.getSubject());

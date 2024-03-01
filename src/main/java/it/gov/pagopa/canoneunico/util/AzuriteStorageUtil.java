@@ -70,16 +70,16 @@ public class AzuriteStorageUtil {
         }
     }
 
-    public BinaryData downloadBlob(ExecutionContext context, String containerName, String filename) throws CanoneUnicoException {
+    public BinaryData downloadBlob(ExecutionContext context, String containerName, String blob) throws CanoneUnicoException {
         if(!debugAzurite) return null;
 
-        context.getLogger().info(String.format("Download blob %s from container %s", filename, containerName));
+        context.getLogger().info(String.format("Download blob %s from container %s", blob, containerName));
 
         try {
             BlobServiceClient blobServiceClient = new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
             BlobContainerClient container = blobServiceClient.getBlobContainerClient(containerName);
             if (!container.exists()) return null;
-            BlobClient blobClient = container.getBlobClient(filename);
+            BlobClient blobClient = container.getBlobClient(blob);
             if (!blobClient.exists()) return null;
 
             return blobClient.downloadContent();

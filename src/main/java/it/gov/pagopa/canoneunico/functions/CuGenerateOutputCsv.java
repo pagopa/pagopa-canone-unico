@@ -58,19 +58,12 @@ public class CuGenerateOutputCsv {
                             .mapToObj(i -> new CsvOutModel(csvFileNamePks.get(i), finalData.get(i)))
                             .collect(Collectors.toList());
 
-            csvOut.forEach(
-                    e -> {
-                        logger.log(
-                                Level.INFO,
-                                () ->
-                                        "[CuGenerateOutputCsvBatchFunction][" + e.getCsvFileName() + "] try to generate output in InputStorage"
-                                                + " - rows number "
-                                                + e.getData().size());
+            csvOut.forEach(e -> {
+                        logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + e.getCsvFileName() + "] try to generate output in InputStorage - rows number " + e.getData().size());
                         try {
                             if (!e.getData().isEmpty()) {
                                 debtPositionService.uploadOutFile(e.getCsvFileName(), e.getData());
                             }
-
                         } catch (BlobStorageException | IOException ex) {
                             logger.log(Level.SEVERE, () -> "[CuGenerateOutputCsvBatchFunction][" + e.getCsvFileName() + "] error: " + ex.getLocalizedMessage());
                         }
