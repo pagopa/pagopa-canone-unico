@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CsvOutModel {
+    private String containerName;
     private String csvFileName;
     private List<List<String>> data;
 }

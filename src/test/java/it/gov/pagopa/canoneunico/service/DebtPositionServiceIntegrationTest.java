@@ -65,17 +65,12 @@ class DebtPositionServiceIntegrationTest {
     DebtPositionService debtPositionService;
 
     @Test
-    void getCsvFilePkTest()
-            throws ParseException, DatatypeConfigurationException, InvalidKeyException,
-            URISyntaxException {
-
+    void getCsvFilePkTest() {
         debtPositionService =
                 spy(
                         new DebtPositionService(
                                 storageConnectionString,
                                 debtPositionsTable,
-                                containerBlobIn,
-                                containerBlobOut,
                                 logger));
 
         BlobServiceClient blobServiceClient =
@@ -109,8 +104,6 @@ class DebtPositionServiceIntegrationTest {
                         new DebtPositionService(
                                 storageConnectionString,
                                 debtPositionsTable,
-                                containerBlobIn,
-                                containerBlobOut,
                                 logger));
 
         CloudTable table =
@@ -137,8 +130,6 @@ class DebtPositionServiceIntegrationTest {
                         new DebtPositionService(
                                 storageConnectionString,
                                 debtPositionsTable,
-                                containerBlobIn,
-                                containerBlobOut,
                                 logger));
 
         CloudTable table =
@@ -205,8 +196,6 @@ class DebtPositionServiceIntegrationTest {
         debtPositionService = spy(new DebtPositionService(
                 storageConnectionString,
                 debtPositionsTable,
-                containerBlobIn,
-                containerBlobOut,
                 logger));
 
         CloudTable table = CloudStorageAccount.parse(storageConnectionString)
@@ -268,8 +257,6 @@ class DebtPositionServiceIntegrationTest {
                         new DebtPositionService(
                                 storageConnectionString,
                                 debtPositionsTable,
-                                containerBlobIn,
-                                containerBlobOut,
                                 logger));
 
         BlobServiceClient blobServiceClient =
@@ -311,7 +298,7 @@ class DebtPositionServiceIntegrationTest {
         dataLines.add(row3);
         dataLines.add(row2);
 
-        debtPositionService.uploadOutFile(csvFileName, dataLines);
+        debtPositionService.uploadOutFile(containerBlobOut, csvFileName, dataLines);
 
 
         List<String> fileNamesOut = containerClientBlobOut.listBlobs().stream().map(BlobItem::getName)
@@ -322,6 +309,5 @@ class DebtPositionServiceIntegrationTest {
 
         assertTrue(fileNamesOut.contains(csvFileName));
         assertTrue(!fileNamesIn.contains(csvFileName));
-
     }
 }

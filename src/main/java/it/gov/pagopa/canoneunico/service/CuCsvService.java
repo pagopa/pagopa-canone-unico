@@ -59,12 +59,10 @@ import java.util.stream.IntStream;
 
 @NoArgsConstructor
 public class CuCsvService {
-
+    private static final String IUPD_PREFIX = "CU_2024_"; // todo: extract as env variable
     private final String iuvGenerationType = System.getenv("IUV_GENERATION_TYPE");
     private final List<EcConfigEntity> organizationsList = new ArrayList<>();
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
-    private String containerInputBlob = System.getenv("INPUT_CSV_BLOB");
-    private String containerErrorBlob = System.getenv("ERROR_CSV_BLOB");
     private String debtPositionTable = System.getenv("DEBT_POSITIONS_TABLE");
     private String iuvsTable = System.getenv("IUVS_TABLE");
     private String ecConfigTable = System.getenv("ORGANIZATIONS_CONFIG_TABLE");
@@ -79,11 +77,8 @@ public class CuCsvService {
         this.logger = logger;
     }
 
-    public CuCsvService(String storageConnectionString, String containerInputBlob,
-                        String containerErrorBlob, String debtPositionTable, String debtPositionQueue, Logger logger) {
+    public CuCsvService(String storageConnectionString, String debtPositionTable, String debtPositionQueue, Logger logger) {
         this.storageConnectionString = storageConnectionString;
-        this.containerInputBlob = containerInputBlob;
-        this.containerErrorBlob = containerErrorBlob;
         this.debtPositionTable = debtPositionTable;
         this.debtPositionQueue = debtPositionQueue;
         this.logger = logger;
@@ -148,31 +143,31 @@ public class CuCsvService {
                 .build();
     }
 
-    public void uploadCsv(String fileName, String content) {
+    public void uploadCsv(String containerName, String filePath, String content) {
         AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
-        azuriteStorageUtil.createBlob(containerErrorBlob);
+        azuriteStorageUtil.createBlob(containerName);
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerErrorBlob);
-        BlockBlobClient blockBlobClient = cont.getBlobClient(fileName).getBlockBlobClient();
+        BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
+        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath).getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream(content.getBytes());
         blockBlobClient.upload(stream, content.getBytes().length);
     }
 
-    public void deleteCsv(String fileName) {
+    public void deleteCsv(String containerName, String filePath) {
         AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
-        azuriteStorageUtil.createBlob(containerInputBlob);
+        azuriteStorageUtil.createBlob(containerName);
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerInputBlob);
-        cont.getBlobClient(fileName).delete();
+        BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
+        cont.getBlobClient(filePath).delete();
     }
 
-    public List<DebtPositionEntity> saveDebtPosition(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
-        this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileName);
+    public List<DebtPositionEntity> saveDebtPosition(String fileKey, List<PaymentNotice> payments) throws CanoneUnicoException {
+        this.logger.log(Level.INFO, () -> "[CuCsvService] save debt position in table for file " + fileKey);
 
         List<DebtPositionEntity> savedDebtPositionEntities = new ArrayList<>();
-        List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileName, payments), batchSizeDebtPosTable);
+        List<List<DebtPositionEntity>> partitionDebtPositionEntities = Lists.partition(this.getDebtPositionEntities(fileKey, payments), batchSizeDebtPosTable);
 
         // save debt positions partition in table
         IntStream.range(0, partitionDebtPositionEntities.size()).forEach(partitionAddIndex -> {
@@ -189,14 +184,14 @@ public class CuCsvService {
         return savedDebtPositionEntities;
     }
 
-    public boolean pushDebtPosition(String fileName, List<DebtPositionEntity> debtPositionEntities) {
+    public boolean pushDebtPosition(String fileKey, List<DebtPositionEntity> debtPositionEntities) {
 
-        this.logger.log(Level.INFO, () -> "[CuCsvService] push debt position in queue for file " + fileName);
+        this.logger.log(Level.INFO, () -> "[CuCsvService] push debt position in queue for file " + fileKey);
 
         AtomicBoolean isAllMsgPushed = new AtomicBoolean(true);
 
         DebtPositionMessage debtPositionMessage = new DebtPositionMessage();
-        debtPositionMessage.setCsvFilename(fileName);
+        debtPositionMessage.setCsvFilename(fileKey);
         debtPositionMessage.setRetryCount(0);
 
         List<List<DebtPositionRowMessage>> msgRows = Lists.partition(this.getDebtPositionQueueMsg(debtPositionEntities), batchSizeDebtPosQueue);
@@ -356,10 +351,10 @@ public class CuCsvService {
         return IuvCodeBusiness.generateIUV(segregationCode, nextVal);
     }
 
-    private List<DebtPositionEntity> getDebtPositionEntities(String fileName, List<PaymentNotice> payments) throws CanoneUnicoException {
+    private List<DebtPositionEntity> getDebtPositionEntities(String fileKey, List<PaymentNotice> payments) throws CanoneUnicoException {
         List<DebtPositionEntity> debtPositionEntities = new ArrayList<>();
         for (PaymentNotice p : payments) {
-            DebtPositionEntity e = new DebtPositionEntity(fileName, p.getId());
+            DebtPositionEntity e = new DebtPositionEntity(fileKey, p.getId());
             e.setPaIdIstat(p.getPaIdIstat());
             e.setPaIdCatasto(p.getPaIdCatasto());
             e.setPaIdFiscalCode(p.getPaIdFiscalCode());
@@ -437,7 +432,7 @@ public class CuCsvService {
     }
 
     private String generateIUPD(String iuv) {
-        return "CU_2023_" + iuv;
+        return IUPD_PREFIX + iuv;
     }
 
 }

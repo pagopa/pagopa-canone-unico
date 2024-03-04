@@ -12,6 +12,7 @@ import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.CsvValidation;
 import it.gov.pagopa.canoneunico.entity.DebtPositionEntity;
 import it.gov.pagopa.canoneunico.exception.CanoneUnicoException;
+import it.gov.pagopa.canoneunico.model.BlobInfo;
 import it.gov.pagopa.canoneunico.model.DebtPositionValidationCsv;
 import it.gov.pagopa.canoneunico.service.CuCsvService;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
@@ -33,7 +34,8 @@ public class CuCsvParsing {
     private static final String LOG_VALIDATION_PREFIX = "[CuCsvParsingFunction Error] Validation Error: ";
     private static final String LOG_VALIDATION_ERROR_HEADER = "Error during csv validation {filename = %s; nLinesError/nTotLines = %s}";
     private static final String LOG_VALIDATION_ERROR_DETAIL = "{line = %s } - {errors = %s}";
-    private static final String INPUT_CONTAINER_NAME = "input";
+    private static final String INPUT_DIRECTORY_NAME = "input";
+    private static final String ERROR_DIRECTORY_NAME = "error";
 
     /**
      * This function will be invoked when a new or updated blob is detected at the
@@ -46,35 +48,30 @@ public class CuCsvParsing {
         Logger logger = context.getLogger();
 
         try {
-            ArrayList<String> data = getDataFromEvent(context, events);
-            String corporate = data.get(0);
-            String blob = data.get(1);
+            BlobInfo blobInfo = getDataFromEvent(context, events);
 
             LocalDateTime start = LocalDateTime.now();
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
-                            start, blob));
+                            start, blobInfo.getName()));
 
             // get byte content and convert to String type
-            BinaryData content = getContent(context, corporate, blob);
+            BinaryData content = getContent(context, blobInfo);
             String converted = new String(content.toBytes(), StandardCharsets.UTF_8);
 
             // initialize csvService and info from ecConfig
             CuCsvService csvService = this.getCuCsvServiceInstance(logger);
             csvService.initEcConfigList();
-            DebtPositionValidationCsv csvValidation = validateCsv(blob, logger, csvService, converted);
+            DebtPositionValidationCsv csvValidation = validateCsv(blobInfo.getName(), logger, csvService, converted);
 
-            String fileKey = blob;                              // old CUP logic
-            if (blob.contains(INPUT_CONTAINER_NAME + "/")) {    // new CUP logic
-                // concatenation between container and blob name to create unique key: corp_blob
-                fileKey = corporate.concat("_").concat(blob.replace(INPUT_CONTAINER_NAME + "/", ""));
-            }
+            String fileName = blobInfo.getName();
+            String fileKey = AzuriteStorageUtil.getBlobKey(blobInfo.getContainer(), fileName);
             if (csvValidation.getErrorRows().isEmpty()) {
                 // If valid file -> save on table and write on queue
                 handleValidFile(fileKey, logger, start, csvService, csvValidation);
             } else {
                 // If not valid file -> write log error, save on 'error' blob space and delete from 'input' blob space
-                handleInvalidFile(fileKey, logger, start, csvService, converted, csvValidation);
+                handleInvalidFile(blobInfo, logger, start, csvService, converted, csvValidation);
             }
 
             Runtime.getRuntime().gc();
@@ -85,15 +82,15 @@ public class CuCsvParsing {
     }
 
     // return downloaded blob
-    public BinaryData getContent(ExecutionContext context, String corporate, String blob) throws CanoneUnicoException {
-        BinaryData content = new AzuriteStorageUtil().downloadBlob(context, corporate, blob);
+    public BinaryData getContent(ExecutionContext context, BlobInfo blobInfo) throws CanoneUnicoException {
+        BinaryData content = new AzuriteStorageUtil().downloadBlob(context, blobInfo.getContainer(), blobInfo.getDirectory() + '/' + blobInfo.getName());
         if(content == null)
-            throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", corporate, blob));
+            throw new CanoneUnicoException(String.format("[CuCsvParsing] Blob not found, corporate: %s, file: %s", blobInfo.getContainer(), blobInfo.getName()));
         return content;
     }
 
     // return data: [container-name, filename]
-    public ArrayList<String> getDataFromEvent(ExecutionContext context, String events) throws CanoneUnicoException {
+    public BlobInfo getDataFromEvent(ExecutionContext context, String events) throws CanoneUnicoException {
         Logger logger = context.getLogger();
         List<EventGridEvent> eventGridEvents = EventGridEvent.fromString(events);
 
@@ -113,15 +110,15 @@ public class CuCsvParsing {
         }
 
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Blob event subject: %s", context.getInvocationId(), event.getSubject()));
-        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/([\\w-/]+\\.csv)");
+        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.csv)");
         Matcher matcher = pattern.matcher(event.getSubject());
 
         // Check if the pattern is found
         if (matcher.find()) {
-            ArrayList<String> data = new ArrayList<>();
-            data.add(matcher.group(1)); // corporate container
-            data.add(matcher.group(2)); // blob
-            return data;
+            return BlobInfo.builder()
+                           .container(matcher.group(1))
+                           .directory(INPUT_DIRECTORY_NAME)
+                           .name(matcher.group(2)).build();
         } else {
             throw new CanoneUnicoException("[CuCsvParsing] Wrong match in subject: " + event.getSubject());
         }
@@ -139,10 +136,11 @@ public class CuCsvParsing {
         return csvValidation;
     }
 
-    private void handleInvalidFile(String fileName, Logger logger, LocalDateTime start, CuCsvService csvService, String converted, DebtPositionValidationCsv csvValidation) {
+    private void handleInvalidFile(BlobInfo blobInfo, Logger logger, LocalDateTime start, CuCsvService csvService, String converted, DebtPositionValidationCsv csvValidation) {
+        String filename = blobInfo.getName();
         // log
         String header = LOG_VALIDATION_PREFIX + String.format(LOG_VALIDATION_ERROR_HEADER,
-                fileName,
+                filename,
                 csvValidation.getNumberInvalidRows() + "/" + csvValidation.getTotalNumberRows());
         List<String> details = new ArrayList<>();
         csvValidation.getErrorRows().forEach(exception ->
@@ -154,44 +152,44 @@ public class CuCsvParsing {
         long startTime1 = System.currentTimeMillis();
         String errorCSV = csvService.generateErrorCsv(converted, csvValidation);
         long endTime1 = System.currentTimeMillis();
-        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] generateErrorCsv executed in [%s] ms", fileName, (endTime1 - startTime1)));
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] generateErrorCsv executed in [%s] ms", filename, (endTime1 - startTime1)));
 
         // Upload file in error blob storage
         long startTime2 = System.currentTimeMillis();
-        csvService.uploadCsv(fileName, errorCSV);
+        csvService.uploadCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + filename, errorCSV);
         long endTime2 = System.currentTimeMillis();
-        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] uploadCsv executed in [%s] ms", fileName, (endTime2 - startTime2)));
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] uploadCsv executed in [%s] ms", filename, (endTime2 - startTime2)));
 
         // Delete the original file from input blob storage
         long startTime3 = System.currentTimeMillis();
-        csvService.deleteCsv(fileName);
+        csvService.deleteCsv(blobInfo.getContainer(), blobInfo.getDirectory() + '/' + filename);
         long endTime3 = System.currentTimeMillis();
-        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] deleteCsv executed in [%s] ms", fileName, (endTime3 - startTime3)));
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] deleteCsv executed in [%s] ms", filename, (endTime3 - startTime3)));
 
 
         logger.log(Level.INFO, () -> String.format(
                 "[CuCsvParsingFunction END] [%s] execution started at [%s] and ended at [%s]",
-                fileName, start, LocalDateTime.now()));
+                filename, start, LocalDateTime.now()));
     }
 
-    private void handleValidFile(String fileName, Logger logger, LocalDateTime start, CuCsvService csvService, DebtPositionValidationCsv csvValidation) throws CanoneUnicoException {
+    private void handleValidFile(String fileKey, Logger logger, LocalDateTime start, CuCsvService csvService, DebtPositionValidationCsv csvValidation) throws CanoneUnicoException {
         // convert `CsvToBean` object to list of payments
         final List<PaymentNotice> payments = csvValidation.getPayments();
         // save in Table
         long startTime1 = System.currentTimeMillis();
-        List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileName, payments);
+        List<DebtPositionEntity> savedEntities = csvService.saveDebtPosition(fileKey, payments);
         long endTime1 = System.currentTimeMillis();
-        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionTable executed in [%s] ms", fileName, (endTime1 - startTime1)));
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionTable executed in [%s] ms", fileKey, (endTime1 - startTime1)));
 
         // push in queue
         long startTime2 = System.currentTimeMillis();
-        csvService.pushDebtPosition(fileName, savedEntities);
+        csvService.pushDebtPosition(fileKey, savedEntities);
         long endTime2 = System.currentTimeMillis();
-        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionQueue executed in [%s] ms", fileName, (endTime2 - startTime2)));
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: saveDebtPositionQueue executed in [%s] ms", fileKey, (endTime2 - startTime2)));
 
         logger.log(Level.INFO, () -> String.format(
                 "[CuCsvParsingFunction END] [%s] execution started at [%s] and ended at [%s]",
-                fileName, start, LocalDateTime.now()));
+                fileKey, start, LocalDateTime.now()));
     }
 
     public CuCsvService getCuCsvServiceInstance(Logger logger) {

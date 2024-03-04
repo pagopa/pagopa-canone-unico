@@ -15,5 +15,6 @@ public class PaymentPositionModel {
     private String email;
     private String companyName;
     private String validityDate;
+    private Boolean switchToExpired;
     private List<PaymentOptionModel> paymentOption;
 }

@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
  * Azure Functions with Azure Queue trigger.
  */
 public class CuCreateDebtPosition {
-
     private final String maxAttempts = System.getenv("MAX_ATTEMPTS");
+    private static final String DUE_DATE = "2025-04-30T23:59:59.999Z"; // todo: extract as env variable
 
     /**
      * This function will be invoked when a new message is detected in the queue
@@ -120,15 +120,15 @@ public class CuCreateDebtPosition {
     /**
      * calls GPD for the status and updates the elem status in the table
      *
-     * @param filename     used as partition key
+     * @param filekey      used as partition key
      * @param logger       for logging
      * @param row          element to process
      * @param invocationId invocation id for logging
      */
 
-    private RetryStep createAndPublishDebtPosition(String filename, Logger logger, DebtPositionRowMessage row, String invocationId) {
+    private RetryStep createAndPublishDebtPosition(String filekey, Logger logger, DebtPositionRowMessage row, String invocationId) {
         String requestId = invocationId + ":" + row.getId();
-        logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] row id:" + row.getId());
+        logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filekey + "] row id:" + row.getId());
         switch (RetryStep.valueOf(row.getRetryAction())) {
             case NONE:
             case CREATE:
@@ -151,17 +151,17 @@ public class CuCreateDebtPosition {
                 }
             default:
                 // update entity
-                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
-                updateTable(filename, logger, row, true, requestId);
-                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filename + "] Updated table with CREATED status: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filekey + "] Updating table: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
+                updateTable(filekey, logger, row, true, requestId);
+                logger.log(Level.FINE, () -> "[CuCreateDebtPositionFunction][requestId=" + requestId + "][" + filekey + "] Updated table with CREATED status: [paIdFiscalCode= " + row.getPaIdFiscalCode() + "; debtorIdFiscalCode=" + row.getDebtorIdFiscalCode() + "]");
                 return RetryStep.DONE;
         }
 
     }
 
-    private void updateTable(String filename, Logger logger, DebtPositionRowMessage row, boolean status, String requestId) {
+    private void updateTable(String filekey, Logger logger, DebtPositionRowMessage row, boolean status, String requestId) {
         var tableService = getDebtPositionTableService(logger);
-        tableService.updateEntity(filename, row, status, requestId);
+        tableService.updateEntity(filekey, row, status, requestId);
     }
 
 
@@ -175,12 +175,13 @@ public class CuCreateDebtPosition {
                 .fullName(row.getDebtorName())
                 .email(row.getDebtorEmail())
                 .companyName(row.getCompanyName())
+                .switchToExpired(false)
                 .paymentOption(List.of(PaymentOptionModel.builder()
                         .iuv(row.getIuv())
                         .amount(row.getAmount())
                         .description("Canone Unico Patrimoniale - CORPORATE")
                         .isPartialPayment(false)
-                        .dueDate("2024-04-30T23:59:59.999Z")
+                        .dueDate(DUE_DATE)
                         .transfer(List.of(Transfer.builder()
                                 .idTransfer("1")
                                 .amount(row.getAmount())

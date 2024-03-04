@@ -5,7 +5,6 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.table.CloudTable;
@@ -37,22 +36,20 @@ public class DebtPositionService {
     private static final String CU_AUX_DIGIT = System.getenv("CU_AUX_DIGIT");
     public static final String STATUS = "Status";
     private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
+    private static final String INPUT_CONTAINER_NAME = "input";
+    private static final String OUTPUT_CONTAINER_NAME = "output";
+    private static final String ERROR_CONTAINER_NAME = "error";
+    private static final String DEFAULT_FILE_NAME = "info";
     private final String storageConnectionString;
     private final String debtPositionsTable;
-    private final String containerBlobIn;
-    private final String containerBlobOut;
     private final Logger logger;
 
     public DebtPositionService(
             String storageConnectionString,
             String debtPositionsTable,
-            String containerBlobIn,
-            String containerBlobOut,
             Logger logger) {
         this.storageConnectionString = storageConnectionString;
         this.debtPositionsTable = debtPositionsTable;
-        this.containerBlobIn = containerBlobIn;
-        this.containerBlobOut = containerBlobOut;
         this.logger = logger;
     }
 
@@ -65,12 +62,21 @@ public class DebtPositionService {
         BlobServiceClient blobServiceClient =
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
 
-        BlobContainerClient client = blobServiceClient.getBlobContainerClient(this.containerBlobIn);
+        List<String> pkList = new ArrayList<>();
 
-        return client.listBlobs()
-                .stream()
-                .map(BlobItem::getName)
-                .collect(Collectors.toList());
+        blobServiceClient.listBlobContainers().forEach((containerItem) -> {
+            List<String> pkListByContainer = blobServiceClient.getBlobContainerClient(containerItem.getName())
+                    .listBlobs()
+                    .stream()
+                    .filter(blob -> pkBlobFilter(blob.getName()))
+                    .map(blobItem -> AzuriteStorageUtil.getBlobKey(containerItem, blobItem))
+                    .collect(Collectors.toList());
+            pkList.addAll(pkListByContainer);
+        });
+
+        this.logger.fine("[DebtPositionService] Processing organization list" + pkList);
+
+        return pkList;
     }
 
     public List<List<List<String>>> getDebtPositionListByPk(List<String> pks)
@@ -162,14 +168,14 @@ public class DebtPositionService {
         return item != null ? item.toString() : "";
     }
 
-    public void uploadOutFile(String csvFileName, List<List<String>> dataLines)
+    public void uploadOutFile(String containerName, String csvFileName, List<List<String>> dataLines)
             throws FileNotFoundException {
         // insert blob in OUTPUT container
         BlobServiceClient blobServiceClient =
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient containerBlobOutClient =
-                blobServiceClient.getBlobContainerClient(this.containerBlobOut);
-        BlobClient blobClient = containerBlobOutClient.getBlobClient(csvFileName);
+        BlobContainerClient blobContainerClient =
+                blobServiceClient.getBlobContainerClient(containerName);
+        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_CONTAINER_NAME + '/' + csvFileName);
 
         File csvOutputFile = new File(csvFileName);
 
@@ -191,9 +197,7 @@ public class DebtPositionService {
         logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + csvFileName + "] Created output file in OutputStorage: " + csvOutputFile);
 
         // delete blob in INPUT container
-        BlobContainerClient containerBlobInClient =
-                blobServiceClient.getBlobContainerClient(this.containerBlobIn);
-        BlobClient blobInClient = containerBlobInClient.getBlobClient(csvFileName);
+        BlobClient blobInClient = blobContainerClient.getBlobClient(INPUT_CONTAINER_NAME + '/' + csvFileName);
         blobInClient.delete();
         logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + csvFileName + "] Deleted file in InputStorage: " + csvFileName);
     }
@@ -202,13 +206,16 @@ public class DebtPositionService {
         return String.join(";", data);
     }
 
+    private boolean pkBlobFilter(String name) {
+        return name.contains(INPUT_CONTAINER_NAME) && !name.contains(OUTPUT_CONTAINER_NAME)
+                       && !name.contains(ERROR_CONTAINER_NAME) && !name.contains(DEFAULT_FILE_NAME) && !name.equals(INPUT_CONTAINER_NAME);
+    }
+
     private void createEnv() {
         AzuriteStorageUtil azuriteStorageUtil =
                 new AzuriteStorageUtil(debugAzurite, storageConnectionString);
         try {
             azuriteStorageUtil.createTable(debtPositionsTable);
-            azuriteStorageUtil.createBlob(containerBlobIn);
-            azuriteStorageUtil.createBlob(containerBlobOut);
         } catch (Exception e) {
             this.logger.severe(
                     String.format("[AzureStorage] Problem to create table: %s", e.getMessage()));
