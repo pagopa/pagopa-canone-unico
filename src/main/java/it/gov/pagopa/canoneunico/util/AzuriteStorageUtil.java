@@ -32,6 +32,7 @@ import java.util.List;
 @NoArgsConstructor
 public class AzuriteStorageUtil {
 
+    // DEBUG_AZURITE is only for local test purposes: if exist and is enabled executes the storage account resources (table, queue, blob) creation
     private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
     private static final String INPUT_CONTAINER_NAME = "input";
@@ -76,8 +77,6 @@ public class AzuriteStorageUtil {
     }
 
     public BinaryData downloadBlob(ExecutionContext context, String containerName, String blob) throws CanoneUnicoException {
-        if(!debugAzurite) return null;
-
         context.getLogger().info(String.format("[AzuriteStorageUtil] Download blob %s from container %s", blob, containerName));
 
         try {

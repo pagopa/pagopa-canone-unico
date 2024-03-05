@@ -57,9 +57,9 @@ if action == Action.Upload:
                         "Lorem ipsum", "lorem@pec.loremit", "", ""]
                 # write the data
                 writer.writerow(data)
-
+    blob = "input/" + file
     os.system(
-        f'az storage blob upload --account-name {account_name} --auth-mode key -c {container_name} -f {path}/{file} -n {file}')
+        f'az storage blob upload --account-name {account_name} --auth-mode key -c {container_name} -f {path}/{file} -n {blob}')
 
 elif action == Action.List:
     os.system(
