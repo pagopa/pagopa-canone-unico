@@ -97,8 +97,8 @@ public class AzuriteStorageUtil {
 
     // based on this format corp_blobName return CsvOutModel instance
     public static CsvOutModel getOutByBlobKey(String blobKey, List<List<String>> data) {
-        String corporate = blobKey.substring(0, blobKey.indexOf("_"));
-        String filename = blobKey.substring(blobKey.indexOf('_')+1);
+        String corporate = blobKey.substring(0, blobKey.indexOf(KEY_SEPARATOR));
+        String filename = blobKey.substring(blobKey.indexOf(KEY_SEPARATOR)+1);
         return new CsvOutModel(corporate, filename, data);
     }
 
