@@ -372,16 +372,17 @@ class CuCsvServiceTest {
     @Test
     void uploadCsv() {
         Logger logger = Logger.getLogger("testlogging");
+        String corporateContainer = "corporate";
 
         var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient container = blobServiceClient.getBlobContainerClient("error");
+        BlobContainerClient container = blobServiceClient.getBlobContainerClient(corporateContainer);
         if (!container.exists()) {
-            blobServiceClient.createBlobContainer("error");
+            blobServiceClient.createBlobContainer(corporateContainer);
         }
-        csvService.uploadCsv("testcontainer", "fileName.txt", "test content string");
+        csvService.uploadCsv(corporateContainer, "fileName.txt", "test content string");
         // se arrivo a questa chiamata l'upload è andato a buon fine
         assertTrue(true);
         
@@ -390,20 +391,20 @@ class CuCsvServiceTest {
     @Test
     void deleteCsv() {
         Logger logger = Logger.getLogger("testlogging");
-
+        String corporateContainer = "input";
         var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient container = blobServiceClient.getBlobContainerClient("input");
+        BlobContainerClient container = blobServiceClient.getBlobContainerClient(corporateContainer);
         if (!container.exists()) {
-            blobServiceClient.createBlobContainer("input");
+            blobServiceClient.createBlobContainer(corporateContainer);
         }
 		BlockBlobClient blockBlobClient = container.getBlobClient("fileName.txt").getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream("test content string".getBytes());
         blockBlobClient.upload(stream, "test content string".getBytes().length);
 
-        csvService.deleteCsv("testcontainer", "fileName.txt");
+        csvService.deleteCsv(corporateContainer, "fileName.txt");
 
         // se arrivo a questa chiamata la delete è andata a buon fine
         assertTrue(true);
