@@ -59,7 +59,7 @@ import java.util.stream.IntStream;
 
 @NoArgsConstructor
 public class CuCsvService {
-    private static final String IUPD_PREFIX = "CU_2024_"; // todo: extract as env variable
+    private final String CUP_YEAR = System.getenv("CUP_YEAR");
     private final String iuvGenerationType = System.getenv("IUV_GENERATION_TYPE");
     private final List<EcConfigEntity> organizationsList = new ArrayList<>();
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
@@ -432,7 +432,7 @@ public class CuCsvService {
     }
 
     private String generateIUPD(String iuv) {
-        return IUPD_PREFIX + iuv;
+        return "CU_" + CUP_YEAR + "_" + iuv;
     }
 
 }

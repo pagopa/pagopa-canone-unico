@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  */
 public class CuCreateDebtPosition {
     private final String maxAttempts = System.getenv("MAX_ATTEMPTS");
-    private static final String DUE_DATE = "2025-04-30T23:59:59.999Z"; // todo: extract as env variable
+    private final String PO_DUE_DATE = System.getenv("PO_DUE_DATE");
 
     /**
      * This function will be invoked when a new message is detected in the queue
@@ -181,7 +181,7 @@ public class CuCreateDebtPosition {
                         .amount(row.getAmount())
                         .description("Canone Unico Patrimoniale - CORPORATE")
                         .isPartialPayment(false)
-                        .dueDate(DUE_DATE)
+                        .dueDate(PO_DUE_DATE)
                         .transfer(List.of(Transfer.builder()
                                 .idTransfer("1")
                                 .amount(row.getAmount())
