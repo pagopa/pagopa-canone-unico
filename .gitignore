@@ -40,3 +40,5 @@ obj/
 
 # custom files
 filename.csv
+scripts/inputData
+scripts/outputData
