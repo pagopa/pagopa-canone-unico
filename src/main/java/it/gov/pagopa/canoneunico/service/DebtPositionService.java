@@ -37,7 +37,7 @@ public class DebtPositionService {
     public static final String STATUS = "Status";
     private final boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
     private static final String INPUT_CONTAINER_NAME = "input";
-    private static final String OUTPUT_CONTAINER_NAME = "output";
+    private static final String OUTPUT_DIRECTORY_NAME = "output";
     private static final String ERROR_CONTAINER_NAME = "error";
     private static final String DEFAULT_FILE_NAME = "info";
     private final String storageConnectionString;
@@ -175,7 +175,7 @@ public class DebtPositionService {
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient blobContainerClient =
                 blobServiceClient.getBlobContainerClient(containerName);
-        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_CONTAINER_NAME + '/' + csvFileName);
+        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_DIRECTORY_NAME + '/' + csvFileName);
 
         File csvOutputFile = new File(csvFileName);
 
@@ -207,7 +207,7 @@ public class DebtPositionService {
     }
 
     private boolean pkBlobFilter(String name) {
-        return name.contains(INPUT_CONTAINER_NAME) && !name.contains(OUTPUT_CONTAINER_NAME)
+        return name.contains(INPUT_CONTAINER_NAME) && !name.contains(OUTPUT_DIRECTORY_NAME)
                        && !name.contains(ERROR_CONTAINER_NAME) && !name.contains(DEFAULT_FILE_NAME) && !name.equals(INPUT_CONTAINER_NAME);
     }
 

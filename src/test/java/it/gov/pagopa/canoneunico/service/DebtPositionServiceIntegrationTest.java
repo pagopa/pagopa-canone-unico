@@ -83,7 +83,7 @@ class DebtPositionServiceIntegrationTest {
         int noBlob = 10;
 
         for (int i = 0; i < noBlob; i++) {
-            blobClient = containerClient.getBlobClient("csv" + i + ".csv");
+            blobClient = containerClient.getBlobClient("input/csv" + i + ".csv");
             targetStream = new ByteArrayInputStream(initialString.getBytes());
             blobClient.upload(BinaryData.fromStream(targetStream));
         }
@@ -136,7 +136,11 @@ class DebtPositionServiceIntegrationTest {
                 CloudStorageAccount.parse(storageConnectionString)
                         .createCloudTableClient()
                         .getTableReference(debtPositionsTable);
-//    table.createIfNotExists();
+        try {
+            table.createIfNotExists();
+        } catch (StorageException e) {
+            // continue
+        }
 
         DebtPositionEntity debtPositionEntity;
         for (int j = 0; j < 3; j++) {
@@ -202,6 +206,12 @@ class DebtPositionServiceIntegrationTest {
                 .createCloudTableClient()
                 .getTableReference(debtPositionsTable);
 
+        try {
+            table.createIfNotExists();
+        } catch (StorageException e) {
+            // continue
+        }
+
         //insert data into table
         var debtPositionEntity1 = getMockDebtPosition("1", Status.CREATED.name());
         var debtPositionEntity2 = getMockDebtPosition("2", Status.SKIPPED.name());
@@ -262,23 +272,22 @@ class DebtPositionServiceIntegrationTest {
         BlobServiceClient blobServiceClient =
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
 
-        BlobContainerClient containerClientBlobIn = blobServiceClient.getBlobContainerClient(containerBlobIn);
-        if (!containerClientBlobIn.exists()) {
-            containerClientBlobIn = blobServiceClient.createBlobContainer(containerBlobIn);
+        final String corpContainer = "corp";
+        BlobContainerClient containerCorporate = blobServiceClient.getBlobContainerClient(corpContainer);
+        if (!containerCorporate.exists()) {
+            containerCorporate = blobServiceClient.createBlobContainer(corpContainer);
         }
-
 
         String initialString = "test-text";
         InputStream targetStream;
         BlobClient blobClient;
 
         String csvFileName = "filename.csv";
+        String csvFilePath = "input/filename.csv";
 
-        blobClient = containerClientBlobIn.getBlobClient(csvFileName);
+        blobClient = containerCorporate.getBlobClient(csvFilePath);
         targetStream = new ByteArrayInputStream(initialString.getBytes());
         blobClient.upload(BinaryData.fromStream(targetStream));
-
-        BlobContainerClient containerClientBlobOut = blobServiceClient.createBlobContainer(containerBlobOut);
 
         List<List<String>> dataLines = new ArrayList<>();
         List<String> row1 = new ArrayList<>();
@@ -298,16 +307,13 @@ class DebtPositionServiceIntegrationTest {
         dataLines.add(row3);
         dataLines.add(row2);
 
-        debtPositionService.uploadOutFile(containerBlobOut, csvFileName, dataLines);
+        debtPositionService.uploadOutFile(corpContainer, csvFileName, dataLines);
 
 
-        List<String> fileNamesOut = containerClientBlobOut.listBlobs().stream().map(BlobItem::getName)
+        List<String> corporateFiles = containerCorporate.listBlobs().stream().map(BlobItem::getName)
                 .collect(Collectors.toList());
 
-        List<String> fileNamesIn = containerClientBlobIn.listBlobs().stream().map(BlobItem::getName)
-                .collect(Collectors.toList());
-
-        assertTrue(fileNamesOut.contains(csvFileName));
-        assertTrue(!fileNamesIn.contains(csvFileName));
+        assertTrue(corporateFiles.contains("output/" + csvFileName));
+        assertTrue(!corporateFiles.contains("input/" + csvFileName));
     }
 }
