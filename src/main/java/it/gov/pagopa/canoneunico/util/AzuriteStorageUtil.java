@@ -32,7 +32,8 @@ import java.util.List;
 @NoArgsConstructor
 public class AzuriteStorageUtil {
 
-    // DEBUG_AZURITE is only for local test purposes: if exist and is enabled executes the storage account resources (table, queue, blob) creation
+    // DEBUG_AZURITE is for local test purposes only: if it exists and is enabled,
+    // the creation of the storage account resources (table, queue, blob) is performed
     private boolean debugAzurite = Boolean.parseBoolean(System.getenv("DEBUG_AZURITE"));
     private String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
     private static final String INPUT_CONTAINER_NAME = "input";

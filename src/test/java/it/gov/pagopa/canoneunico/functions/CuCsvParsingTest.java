@@ -32,7 +32,6 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
-import com.opencsv.exceptions.CsvConstraintViolationException;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
@@ -122,13 +121,13 @@ class CuCsvParsingTest {
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
         doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
         function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
         verify(cuCsvService, times(1)).saveDebtPosition("corp_2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
     
@@ -187,13 +186,13 @@ class CuCsvParsingTest {
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
         doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
         function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
         verify(cuCsvService, times(1)).saveDebtPosition("corp_2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
 
@@ -227,13 +226,13 @@ class CuCsvParsingTest {
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
         doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
         function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
         verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
         verify(cuCsvService, times(1)).deleteCsv(any(), any());
     }
@@ -268,13 +267,13 @@ class CuCsvParsingTest {
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
         doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
         doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
         function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
         verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
         verify(cuCsvService, times(1)).deleteCsv(any(), any());
 

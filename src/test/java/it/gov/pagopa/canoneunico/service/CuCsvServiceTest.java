@@ -169,7 +169,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(1, csvToBean.parse().size());
         
@@ -215,7 +215,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(1, csvToBean.parse().size());
         
@@ -266,7 +266,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         // Il parsing del file va in errore per id_catasto duplicato quindi la size è 0
         assertEquals(0, csvToBean.parse().size());
@@ -318,7 +318,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         // Il parsing del file va in errore per id_istat duplicato quindi la size è 0
         assertEquals(0, csvToBean.parse().size());
@@ -340,7 +340,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(0, csvToBean.parse().size());
         assertEquals(1, csvToBean.getCapturedExceptions().size());
@@ -362,7 +362,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(0, csvToBean.parse().size());
         assertEquals(1, csvToBean.getCapturedExceptions().size());
@@ -767,7 +767,7 @@ class CuCsvServiceTest {
         validCsv.getErrorRows().add(rowErr);
         
         
-        String errorFile = csvService.generateErrorCsv(csv.toString(), validCsv);
+        String errorFile = csvService.generateRowsErrorCsv(csv.toString(), validCsv);
         assertNotNull(errorFile);
     }
     

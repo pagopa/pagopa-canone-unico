@@ -46,11 +46,11 @@ public class CuCsvParsing {
             @QueueTrigger(name = "BlobCreatedEventTrigger", queueName = "%CU_BLOB_EVENTS_QUEUE%", connection = "CU_SA_CONNECTION_STRING") String events,
             final ExecutionContext context) {
         Logger logger = context.getLogger();
+        LocalDateTime start = LocalDateTime.now();
 
         try {
             BlobInfo blobInfo = getDataFromEvent(context, events);
 
-            LocalDateTime start = LocalDateTime.now();
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
                             start, blobInfo.getName()));
@@ -127,10 +127,11 @@ public class CuCsvParsing {
     private DebtPositionValidationCsv validateCsv(String fileName, Logger logger, CuCsvService csvService, String converted) {
         // parse CSV file to create an object based on 'PaymentNotice' bean
         long startTime = System.currentTimeMillis();
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(converted);
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(converted);
+        logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: parseCsv executed", fileName));
 
         // Check if CSV is valid
-        DebtPositionValidationCsv csvValidation = CsvValidation.checkCsvIsValid(fileName, csvToBean);
+        DebtPositionValidationCsv csvValidation = CsvValidation.checkCsvIsValid(logger, fileName, csvToBean);
         long endTime = System.currentTimeMillis();
         logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] time: parseCsv and checkCsvIsValid executed in [%s] ms", fileName, (endTime - startTime)));
         return csvValidation;
@@ -150,7 +151,7 @@ public class CuCsvParsing {
 
         // Create error file
         long startTime1 = System.currentTimeMillis();
-        String errorCSV = csvService.generateErrorCsv(converted, csvValidation);
+        String errorCSV = csvService.generateRowsErrorCsv(converted, csvValidation);
         long endTime1 = System.currentTimeMillis();
         logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] generateErrorCsv executed in [%s] ms", filename, (endTime1 - startTime1)));
 

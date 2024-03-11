@@ -123,7 +123,7 @@ public class CuCsvService {
 
     }
 
-    public CsvToBean<PaymentNotice> parseCsv(String content) {
+    public CsvToBean<PaymentNotice> parseCsvToBean(String content) {
 
         Reader reader = new StringReader(content);
         // Create Mapping Strategy to arrange the column name
@@ -257,9 +257,14 @@ public class CuCsvService {
     }
 
 
-    public String generateErrorCsv(String converted, DebtPositionValidationCsv csvValidationErrors) {
+    public String generateRowsErrorCsv(String converted, DebtPositionValidationCsv csvValidationErrors) {
 
         StringWriter csv = new StringWriter();
+        String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_mail;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;"
+                                 + "debtor_name;debtor_email;payment_notice_number;note;errors_note";
+        String footer = "nLinesError/nTotLines:" + csvValidationErrors.getNumberInvalidRows() + "/" + csvValidationErrors.getTotalNumberRows();
+        csv.append(headers);
+        csv.append(System.lineSeparator());
 
         try (Reader reader = new StringReader(converted)) {
             // Create Mapping Strategy to arrange the column name
@@ -281,7 +286,6 @@ public class CuCsvService {
                 p.setErrorsNote("validation error: " + e.getErrorsDetail());
             }
 
-
             // Create Mapping Strategy to arrange the column name
             ColumnPositionMappingStrategy<PaymentNoticeError> mappingStrategyWrite =
                     new ColumnPositionMappingStrategy<>();
@@ -294,23 +298,34 @@ public class CuCsvService {
                     .withMappingStrategy(mappingStrategyWrite)
                     .withOrderedResults(true)
                     .build();
-            beanWriter.write(paymentsToWrite);
 
-            String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_mail;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;"
-                    + "debtor_name;debtor_email;payment_notice_number;note;errors_note";
-            String footer = "nLinesError/nTotLines:" + csvValidationErrors.getNumberInvalidRows() + "/" + csvValidationErrors.getTotalNumberRows();
-            csv.append(headers);
-            csv.append(System.lineSeparator());
+            beanWriter.write(paymentsToWrite);
             csv.append(writer.toString());
             csv.append(System.lineSeparator());
             csv.append(footer);
             csv.flush();
             csv.close();
-
-        } catch (IOException | CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
+        } catch (IOException | CsvDataTypeMismatchException | CsvRequiredFieldEmptyException | RuntimeException e) {
             logger.log(Level.SEVERE, () -> "[CuCsvService generateErrorCsv] Error " + e.getMessage() + " "
                     + e.getCause());
+
+            csvValidationErrors.getErrorRows().forEach(
+                    exception -> {
+                        csv.append(String.format("{line = %s } - {errors = %s}", exception.getRowNumber() - 1, exception.getErrorsDetail()));
+                        csv.append(System.lineSeparator());
+                    });
+            csv.append(footer);
+            csv.flush();
+
+            try {
+                csv.close();
+                return csv.toString();
+            } catch (IOException ex) {
+                logger.log(Level.SEVERE, () -> "[CuCsvService generateErrorCsv] Error " + e.getMessage() + " "
+                                                       + e.getCause());
+            }
         }
+
         return csv.toString();
     }
 
