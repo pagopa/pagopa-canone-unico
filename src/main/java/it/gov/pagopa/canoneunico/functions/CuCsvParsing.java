@@ -105,7 +105,8 @@ public class CuCsvParsing {
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Call event type %s handler.", context.getInvocationId(), event.getEventType()));
         StorageBlobCreatedEventData blobData = event.getData().toObject(StorageBlobCreatedEventData.class, new DefaultJsonSerializer());
 
-        if (blobData.getContentLength() > 1e+8 || blobData.getContentLength() == 0) { // if file greater than 100 MB or 0 MB
+        // to prevent OutOfMemoryException test this corner case is required: if file greater than 100 MB
+        if (blobData.getContentLength() > 1e+8 || blobData.getContentLength() == 0) {
             throw new CanoneUnicoException("[CuCsvParsing] File length not allowed: " + blobData.getContentLength() + " MB");
         }
 
