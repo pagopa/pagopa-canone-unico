@@ -1,5 +1,6 @@
 package it.gov.pagopa.canoneunico.functions;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import com.azure.core.util.BinaryData;
+import it.gov.pagopa.canoneunico.model.BlobInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -29,7 +32,6 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.enums.CSVReaderNullFieldIndicator;
-import com.opencsv.exceptions.CsvConstraintViolationException;
 
 import it.gov.pagopa.canoneunico.csv.model.PaymentNotice;
 import it.gov.pagopa.canoneunico.csv.validaton.PaymentNoticeVerifier;
@@ -64,7 +66,7 @@ class CuCsvParsingTest {
     }
 
     @Test
-    void checkParseFileOKTest() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException, CsvConstraintViolationException {
+    void checkParseFileOKTest() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
 
         ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
@@ -109,24 +111,28 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        BlobInfo blobInfo = BlobInfo.builder()
+                                    .container("corp")
+                                    .name("2021-04-21_pagcorp0007_0101108TS.csv").build();
+
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
-       
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
+        doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
-        byte[] file = data.getBytes();
-
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
-        verify(cuCsvService, times(1)).saveDebtPosition("2021-04-21_pagcorp0007_0101108TS.csv", payments);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
+        verify(cuCsvService, times(1)).saveDebtPosition("corp_2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
     
     @Test
-    void checkParseFileOKTest_noIbanValueInEcConfig() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException, CsvConstraintViolationException {
+    void checkParseFileOKTest_noIbanValueInEcConfig() throws InvalidKeyException, StorageException, URISyntaxException, CanoneUnicoException {
 
         ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("2021-04-21_pagcorp0007_0101108TS.csv");
@@ -170,20 +176,24 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        BlobInfo blobInfo = BlobInfo.builder()
+                                    .container("corp")
+                                    .name("2021-04-21_pagcorp0007_0101108TS.csv").build();
+
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
-       
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
+        doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
-        byte[] file = data.getBytes();
-
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
-        verify(cuCsvService, times(1)).saveDebtPosition("2021-04-21_pagcorp0007_0101108TS.csv", payments);
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
+        verify(cuCsvService, times(1)).saveDebtPosition("corp_2021-04-21_pagcorp0007_0101108TS.csv", payments);
     }
 
     @Test
@@ -206,23 +216,25 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        BlobInfo blobInfo = BlobInfo.builder()
+                                    .container("corp")
+                                    .name("2021-04-21_pagcorp0007_0101108TS.csv").build();
 
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
+        doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
-
-        byte[] file = data.getBytes();
-
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_KO.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
-        verify(cuCsvService, times(1)).uploadCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv", null);
-        verify(cuCsvService, times(1)).deleteCsv("2021-04-21_pagcorp0007_0101108TS2_KO.csv");
-
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
+        verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
+        verify(cuCsvService, times(1)).deleteCsv(any(), any());
     }
     
     @Test
@@ -245,22 +257,25 @@ class CuCsvParsingTest {
                 .withThrowExceptions(false)
                 .build();
 
+        byte[] file = data.getBytes();
+        BlobInfo blobInfo = BlobInfo.builder()
+                                    .container("corp")
+                                    .name("2021-04-21_pagcorp0007_0101108TS.csv").build();
 
         // precondition
         when(context.getLogger()).thenReturn(logger);
         doReturn(cuCsvService).when(function).getCuCsvServiceInstance(logger);
-        when(cuCsvService.parseCsv(data)).thenReturn(csvToBean);
+        doReturn(BinaryData.fromBytes(file)).when(function).getContent(context, blobInfo);
+        doReturn(blobInfo).when(function).getDataFromEvent(context, "events");
+        when(cuCsvService.parseCsvToBean(data)).thenReturn(csvToBean);
 
-
-        byte[] file = data.getBytes();
-
-        function.run(file, "2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", context);
+        function.run("events", context);
 
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
-        verify(cuCsvService, times(1)).parseCsv(data);
-        verify(cuCsvService, times(1)).uploadCsv("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv", null);
-        verify(cuCsvService, times(1)).deleteCsv("2021-04-21_pagcorp0007_0101108TS2_noEC_KO.csv");
+        verify(cuCsvService, times(1)).parseCsvToBean(data);
+        verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
+        verify(cuCsvService, times(1)).deleteCsv(any(), any());
 
     }
 }

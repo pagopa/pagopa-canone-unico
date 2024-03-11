@@ -48,7 +48,7 @@ class CuGenerateOutputCsvTest {
         // Asserts
         verify(context, times(1)).getLogger();
         verify(debtPositionService, times(1)).getDebtPositionListByPk(any());
-        verify(debtPositionService, times(0)).uploadOutFile(anyString(), any());
+        verify(debtPositionService, times(0)).uploadOutFile(anyString(), anyString(), any());
 
     }
 

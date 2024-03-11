@@ -40,12 +40,12 @@ public class DebtPositionTableService {
 
 
     /**
-     * @param filename     used as partition key
+     * @param filekey      used as partition key
      * @param debtPosition elem of the message
      * @param status       to update
      * @param requestId
      */
-    public void updateEntity(String filename, DebtPositionRowMessage debtPosition, boolean status, String requestId) {
+    public void updateEntity(String filekey, DebtPositionRowMessage debtPosition, boolean status, String requestId) {
 
 
         try {
@@ -54,7 +54,7 @@ public class DebtPositionTableService {
                     .getTableReference(this.tableName);
 
             // update the entity
-            DebtPositionEntity entity = new DebtPositionEntity(filename, debtPosition.getId());
+            DebtPositionEntity entity = new DebtPositionEntity(filekey, debtPosition.getId());
             entity.setStatus(status ? Status.CREATED.name() : Status.ERROR.name());
 
             var updateOperation = TableOperation.merge(entity);
@@ -62,7 +62,7 @@ public class DebtPositionTableService {
             table.execute(updateOperation);
 
         } catch (URISyntaxException | StorageException | InvalidKeyException e) {
-            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR][requestId=" + requestId + "][" + filename + "] Error " + e);
+            this.logger.log(Level.SEVERE, () -> "[DebtPositionTableService ERROR][requestId=" + requestId + "][" + filekey + "] Error " + e);
         }
     }
 

@@ -169,7 +169,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(1, csvToBean.parse().size());
         
@@ -215,7 +215,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(1, csvToBean.parse().size());
         
@@ -266,7 +266,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         // Il parsing del file va in errore per id_catasto duplicato quindi la size è 0
         assertEquals(0, csvToBean.parse().size());
@@ -318,7 +318,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         // Il parsing del file va in errore per id_istat duplicato quindi la size è 0
         assertEquals(0, csvToBean.parse().size());
@@ -329,7 +329,7 @@ class CuCsvServiceTest {
     void parseCsv_KO_Amount() {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         StringWriter csv = new StringWriter();
         
@@ -340,7 +340,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(0, csvToBean.parse().size());
         assertEquals(1, csvToBean.getCapturedExceptions().size());
@@ -351,7 +351,7 @@ class CuCsvServiceTest {
     void parseCsv_KO_Mutual_Exclusion() {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         StringWriter csv = new StringWriter();
         
@@ -362,7 +362,7 @@ class CuCsvServiceTest {
         csv.append(System.lineSeparator());
         csv.append(row);
       
-        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsv(csv.toString());
+        CsvToBean<PaymentNotice> csvToBean = csvService.parseCsvToBean(csv.toString());
         assertNotNull(csvToBean);
         assertEquals(0, csvToBean.parse().size());
         assertEquals(1, csvToBean.getCapturedExceptions().size());
@@ -372,16 +372,17 @@ class CuCsvServiceTest {
     @Test
     void uploadCsv() {
         Logger logger = Logger.getLogger("testlogging");
+        String corporateContainer = "corporate";
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient container = blobServiceClient.getBlobContainerClient("error");
+        BlobContainerClient container = blobServiceClient.getBlobContainerClient(corporateContainer);
         if (!container.exists()) {
-            blobServiceClient.createBlobContainer("error");
+            blobServiceClient.createBlobContainer(corporateContainer);
         }
-        csvService.uploadCsv("fileName.txt", "test content string");
+        csvService.uploadCsv(corporateContainer, "fileName.txt", "test content string");
         // se arrivo a questa chiamata l'upload è andato a buon fine
         assertTrue(true);
         
@@ -390,20 +391,21 @@ class CuCsvServiceTest {
     @Test
     void deleteCsv() {
         Logger logger = Logger.getLogger("testlogging");
-
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        String corporateContainer = "input";
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
-        BlobContainerClient container = blobServiceClient.getBlobContainerClient("input");
+        BlobContainerClient container = blobServiceClient.getBlobContainerClient(corporateContainer);
         if (!container.exists()) {
-            blobServiceClient.createBlobContainer("input");
+            blobServiceClient.createBlobContainer(corporateContainer);
         }
 		BlockBlobClient blockBlobClient = container.getBlobClient("fileName.txt").getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream("test content string".getBytes());
         blockBlobClient.upload(stream, "test content string".getBytes().length);
-        
-        csvService.deleteCsv("fileName.txt");
+
+        csvService.deleteCsv(corporateContainer, "fileName.txt");
+
         // se arrivo a questa chiamata la delete è andata a buon fine
         assertTrue(true);
         
@@ -521,7 +523,7 @@ class CuCsvServiceTest {
     void pushDebtPosition() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "queue", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "queue", logger));
         
         CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).createCloudQueueClient()
                 .getQueueReference("queue");
@@ -551,7 +553,7 @@ class CuCsvServiceTest {
     void pushDebtPositionSkipped() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "queue", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "queue", logger));
         
         CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).createCloudQueueClient()
                 .getQueueReference("queue");
@@ -581,7 +583,7 @@ class CuCsvServiceTest {
     void addDebtPositionEntityList() throws InvalidKeyException, URISyntaxException, StorageException {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
         CloudTableClient cloudTableClient = cloudStorageAccount.createCloudTableClient();
@@ -621,7 +623,7 @@ class CuCsvServiceTest {
     void addDebtPositionMsg() throws InvalidKeyException, URISyntaxException, StorageException, JsonProcessingException {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "queue", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "queue", logger));
         
         CloudQueue queue = CloudStorageAccount.parse(storageConnectionString).createCloudQueueClient()
                 .getQueueReference("queue");
@@ -745,7 +747,7 @@ class CuCsvServiceTest {
     void generateErrorCsv() {
         Logger logger = Logger.getLogger("testlogging");
 
-        var csvService = spy(new CuCsvService(storageConnectionString, "input", "error", "debtPositionT", "debtPositionQ", logger));
+        var csvService = spy(new CuCsvService(storageConnectionString, "debtPositionT", "debtPositionQ", logger));
         
         StringWriter csv = new StringWriter();
         
@@ -765,7 +767,7 @@ class CuCsvServiceTest {
         validCsv.getErrorRows().add(rowErr);
         
         
-        String errorFile = csvService.generateErrorCsv(csv.toString(), validCsv);
+        String errorFile = csvService.generateRowsErrorCsv(csv.toString(), validCsv);
         assertNotNull(errorFile);
     }
     

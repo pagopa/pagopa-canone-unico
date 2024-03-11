@@ -7,6 +7,7 @@ import com.microsoft.azure.functions.annotation.TimerTrigger;
 import com.microsoft.azure.storage.StorageException;
 import it.gov.pagopa.canoneunico.model.CsvOutModel;
 import it.gov.pagopa.canoneunico.service.DebtPositionService;
+import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -25,8 +26,6 @@ public class CuGenerateOutputCsv {
 
     private final String storageConnectionString = System.getenv("CU_SA_CONNECTION_STRING");
     private final String debtPositionsTable = System.getenv("DEBT_POSITIONS_TABLE");
-    private final String containerBlobIn = System.getenv("INPUT_CSV_BLOB");
-    private final String containerBlobOut = System.getenv("OUTPUT_CSV_BLOB");
 
     /**
      * This function will be invoked periodically according to the specified schedule.
@@ -55,24 +54,17 @@ public class CuGenerateOutputCsv {
             List<List<List<String>>> finalData = data;
             List<CsvOutModel> csvOut =
                     IntStream.range(0, csvFileNamePks.size())
-                            .mapToObj(i -> new CsvOutModel(csvFileNamePks.get(i), finalData.get(i)))
+                            .mapToObj(i -> AzuriteStorageUtil.getOutByBlobKey(csvFileNamePks.get(i), finalData.get(i)))
                             .collect(Collectors.toList());
 
-            csvOut.forEach(
-                    e -> {
-                        logger.log(
-                                Level.INFO,
-                                () ->
-                                        "[CuGenerateOutputCsvBatchFunction][" + e.getCsvFileName() + "] try to generate output in InputStorage"
-                                                + " - rows number "
-                                                + e.getData().size());
+            csvOut.forEach(out -> {
+                        logger.log(Level.INFO, () -> "[CuGenerateOutputCsvBatchFunction][" + out.getContainerName() + "][" + out.getCsvFileName() + "] try to generate output in InputStorage - rows number " + out.getData().size());
                         try {
-                            if (!e.getData().isEmpty()) {
-                                debtPositionService.uploadOutFile(e.getCsvFileName(), e.getData());
+                            if (!out.getData().isEmpty()) {
+                                debtPositionService.uploadOutFile(out.getContainerName(), out.getCsvFileName(), out.getData());
                             }
-
                         } catch (BlobStorageException | IOException ex) {
-                            logger.log(Level.SEVERE, () -> "[CuGenerateOutputCsvBatchFunction][" + e.getCsvFileName() + "] error: " + ex.getLocalizedMessage());
+                            logger.log(Level.SEVERE, () -> "[CuGenerateOutputCsvBatchFunction][" + out.getCsvFileName() + "] error: " + ex.getLocalizedMessage());
                         }
                     });
         } catch (URISyntaxException | InvalidKeyException | StorageException e) {
@@ -84,8 +76,6 @@ public class CuGenerateOutputCsv {
         return new DebtPositionService(
                 this.storageConnectionString,
                 this.debtPositionsTable,
-                this.containerBlobIn,
-                this.containerBlobOut,
                 logger);
     }
 }

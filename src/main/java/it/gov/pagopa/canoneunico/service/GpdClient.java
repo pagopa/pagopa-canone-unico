@@ -19,8 +19,10 @@ public class GpdClient {
 
     private static final String POST_DEBT_POSITIONS = "/organizations/%s/debtpositions";
     private static final String PUBLISH_DEBT_POSITIONS = "/organizations/%s/debtpositions/%s/publish";
+    private static final String HEADER_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
     private static GpdClient instance = null;
     private final String gpdHost = System.getenv("GPD_HOST");
+    private static final String GPD_SUBSCRIPTION_KEY = System.getenv("GPD_SUBSCRIPTION_KEY");
 
     public static GpdClient getInstance() {
         if (instance == null) {
@@ -38,6 +40,7 @@ public class GpdClient {
                     .target(gpdHost + String.format(POST_DEBT_POSITIONS, idPa))
                     .request()
                     .header("X-Request-Id", requestId)
+                    //.header(HEADER_SUBSCRIPTION_KEY, GPD_SUBSCRIPTION_KEY)
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.json(body));
             client.close();
@@ -59,6 +62,7 @@ public class GpdClient {
                     .target(gpdHost + String.format(PUBLISH_DEBT_POSITIONS, idPa, iupd))
                     .request()
                     .header("X-Request-Id", requestId)
+                    //.header(HEADER_SUBSCRIPTION_KEY, GPD_SUBSCRIPTION_KEY)
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.json(null));
             client.close();
