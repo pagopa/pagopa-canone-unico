@@ -49,47 +49,47 @@ class UpdateIban(object):
             print(f"[ERROR][update_entities] HTTP error occurred: {e}")
 
 
-def get_iban_by_ci(self, id_ci):
+    def get_iban_by_ci(self, id_ci):
 
-    """
-        Taxonomy code "0201138TS" Details:
-        CODICE TIPO ENTE CREDITORE: "02",
-        TIPO ENTE CREDITORE: "PROVINCIA / CITTA' METROPOLITANA",
-        PROGRESSIVO MACRO AREA PER ENTE CREDITORE: "01",
-        NOME MACRO AREA: "SERVIZI PROVINCIALI / CITTA' METROPOLITANA",
-        DESCRIZIONE MACRO AREA: "Tributi e diritti gestiti direttamente dall'Ente Provinciale.",
-        CODICE TIPOLOGIA SERVIZIO: "138",
-        TIPO SERVIZIO: "Canone Unico Patrimoniale - CORPORATE",
-        MOTIVO GIURIDICO DELLA RISCOSSIONE: "TS",
-        DESCRIZIONE TIPO SERVIZIO: "(SOLUZIONE CENTRALE GESTITA DA PAGOPA) La Legge di Bilancio 2020 (Legge n. 160/2019)
-            ha previsto, a decorrere dal 1° gennaio 2021, l’istituzione  di un “canone unico patrimoniale” che unifica
-            in un solo prelievo TOSAP, COSAP, l’imposta comunale sulla PUBBLICITÀ e AFFISIONI, ed altre imposte locali.
-            Questa soluzione è gestita centralmente da Pagopa S.p.a.",
-    """
-    print(f"[INFO][get_iban_by_ci] getting CUP iban for {id_ci} EC")
-    try:
-        api_url = f"{self.apim_url}/creditorinstitutions/{id_ci}/ibans/enhanced?label=0201138TS"
-        headers = {'Ocp-Apim-Subscription-Key': self.subkey}
+        """
+            Taxonomy code "0201138TS" Details:
+            CODICE TIPO ENTE CREDITORE: "02",
+            TIPO ENTE CREDITORE: "PROVINCIA / CITTA' METROPOLITANA",
+            PROGRESSIVO MACRO AREA PER ENTE CREDITORE: "01",
+            NOME MACRO AREA: "SERVIZI PROVINCIALI / CITTA' METROPOLITANA",
+            DESCRIZIONE MACRO AREA: "Tributi e diritti gestiti direttamente dall'Ente Provinciale.",
+            CODICE TIPOLOGIA SERVIZIO: "138",
+            TIPO SERVIZIO: "Canone Unico Patrimoniale - CORPORATE",
+            MOTIVO GIURIDICO DELLA RISCOSSIONE: "TS",
+            DESCRIZIONE TIPO SERVIZIO: "(SOLUZIONE CENTRALE GESTITA DA PAGOPA) La Legge di Bilancio 2020 (Legge n. 160/2019)
+                ha previsto, a decorrere dal 1° gennaio 2021, l’istituzione  di un “canone unico patrimoniale” che unifica
+                in un solo prelievo TOSAP, COSAP, l’imposta comunale sulla PUBBLICITÀ e AFFISIONI, ed altre imposte locali.
+                Questa soluzione è gestita centralmente da Pagopa S.p.a.",
+        """
+        print(f"[INFO][get_iban_by_ci] getting CUP iban for {id_ci} EC")
+        try:
+            api_url = f"{self.apim_url}/creditorinstitutions/{id_ci}/ibans/enhanced?label=0201138TS"
+            headers = {'Ocp-Apim-Subscription-Key': self.subkey}
 
-        print(f"[INFO][get_iban_by_ci] calling api: {api_url}")
-        response = requests.get(api_url, headers=headers)
-        print(f"[INFO][get_iban_by_ci] response code: {response.status_code}")
-        response.raise_for_status()
-        json_response = response.json()
-        iban_enhanced = json_response['ibans_enhanced']
-        cup_iban = ""
-        if len(iban_enhanced) > 0:
-            cup_iban = iban_enhanced[0]['iban']
-        else:
-            print(f"[ERROR][get_iban_by_ci] no iban found associated to EC {id_ci}")
+            print(f"[INFO][get_iban_by_ci] calling api: {api_url}")
+            response = requests.get(api_url, headers=headers)
+            print(f"[INFO][get_iban_by_ci] response code: {response.status_code}")
+            response.raise_for_status()
+            json_response = response.json()
+            iban_enhanced = json_response['ibans_enhanced']
+            cup_iban = ""
+            if len(iban_enhanced) > 0:
+                cup_iban = iban_enhanced[0]['iban']
+            else:
+                print(f"[ERROR][get_iban_by_ci] no iban found associated to EC {id_ci}")
 
-        print(f"[INFO][get_iban_by_ci] found cup iban {cup_iban} for EC {id_ci}")
-        return cup_iban
+            print(f"[INFO][get_iban_by_ci] found cup iban {cup_iban} for EC {id_ci}")
+            return cup_iban
 
-    except HTTPError as http_err:
-        print(f"[ERROR][get_iban_by_ci] HTTP error occurred: {http_err}")
-    except Exception as err:
-        print(f"[INFO][get_iban_by_ci] generic error occurred: {err}")
+        except HTTPError as http_err:
+            print(f"[ERROR][get_iban_by_ci] HTTP error occurred: {http_err}")
+        except Exception as err:
+            print(f"[INFO][get_iban_by_ci] generic error occurred: {err}")
 
 
 if __name__ == "__main__":
