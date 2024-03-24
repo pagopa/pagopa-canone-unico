@@ -3,27 +3,8 @@
 
 `pip3 install -r requirements.txt`
 
-# Scripts
-## fix_ecconfig.py
-The script iterates on `ecconfig` table items and removes whitespaces from `Iban` column 
-
-### How-to
-#### DEV
-python3 fix_ecconfig.py --env=dev --account-key=<azure-access-key>
-
-#### UAT
-
-python3 fix_ecconfig.py --env=uat --account-key=<azure-access-key>
-
-#### PROD
-
-python3 fix_ecconfig.py --env=prod --account-key=<azure-access-key>
-
-#### LOCAL
-
-python3 fix_ecconfig.py --env=local
-
-## generateEcConfigTable.py
+Below the details to fill the `pagopapcanoneunicosaecconfigtable` table
+## 1. Run generateEcConfigTable.py
 
 ### How to Use
 
@@ -35,8 +16,12 @@ python3 buildEcConfigTable.py --ec ./inputData/export_enti.csv \
 --env d \
 --key xxx
 ```
-## update_cup_iban.py
-Iterates over `ecConfigTable` and for each Creditor Institution makes a call to ApiConfig iban enhanced api to retrieve
+
+> **_WARNING:_**  Currentlly the script is based on the PdA export data that could be not fully udpated.
+> In the future we need to get data from SelfCare as soon as new API will be provided.
+
+## 2. Run update_cup_iban.py
+Iterates over `pagopapcanoneunicosaecconfigtable` and for each Creditor Institution makes a call to ApiConfig iban enhanced api to retrieve
 the `CUP` iban or the last inserted one.
 ### How to Use
 
