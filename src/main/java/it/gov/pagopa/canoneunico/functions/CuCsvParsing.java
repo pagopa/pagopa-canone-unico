@@ -50,9 +50,15 @@ public class CuCsvParsing {
 
         CuCsvService csvService = this.getCuCsvServiceInstance(logger);
         BlobInfo blobInfo = null;
+
         try {
             blobInfo = getDataFromEvent(context, events);
+        } catch (CanoneUnicoException e) {
+            logger.log(Level.SEVERE, () -> String.format(
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Exception while parsing Event: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+        }
 
+        try {
             BlobInfo finalBlobInfo = blobInfo;
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
