@@ -51,6 +51,7 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -143,13 +144,13 @@ public class CuCsvService {
                 .build();
     }
 
-    public void uploadCsv(String containerName, String filePath, String content) {
+    public void uploadErrorCsv(String containerName, String filePath, String content) {
         AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
         azuriteStorageUtil.createBlob(containerName);
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
-        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath).getBlockBlobClient();
+        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath.replace(".", String.format("%s%s%s", "_", UUID.randomUUID(), "."))).getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream(content.getBytes());
         blockBlobClient.upload(stream, content.getBytes().length);
     }

@@ -20,11 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -175,7 +171,7 @@ public class DebtPositionService {
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient blobContainerClient =
                 blobServiceClient.getBlobContainerClient(containerName);
-        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_DIRECTORY_NAME + '/' + csvFileName);
+        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_DIRECTORY_NAME + '/' + csvFileName.replace(".", String.format("%s%s%s", "_", UUID.randomUUID(), ".")));
 
         File csvOutputFile = new File(csvFileName);
 

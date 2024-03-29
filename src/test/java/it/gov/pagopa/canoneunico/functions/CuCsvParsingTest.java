@@ -233,7 +233,7 @@ class CuCsvParsingTest {
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
         verify(cuCsvService, times(1)).parseCsvToBean(data);
-        verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
+        verify(cuCsvService, times(1)).uploadErrorCsv(any(), any(), any());
         verify(cuCsvService, times(1)).deleteCsv(any(), any());
     }
     
@@ -274,7 +274,7 @@ class CuCsvParsingTest {
         verify(context, times(1)).getLogger();
         verify(cuCsvService, times(1)).initEcConfigList();
         verify(cuCsvService, times(1)).parseCsvToBean(data);
-        verify(cuCsvService, times(1)).uploadCsv(any(), any(), any());
+        verify(cuCsvService, times(1)).uploadErrorCsv(any(), any(), any());
         verify(cuCsvService, times(1)).deleteCsv(any(), any());
 
     }

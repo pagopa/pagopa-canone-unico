@@ -48,19 +48,27 @@ public class CuCsvParsing {
         Logger logger = context.getLogger();
         LocalDateTime start = LocalDateTime.now();
 
-        try {
-            BlobInfo blobInfo = getDataFromEvent(context, events);
+        CuCsvService csvService = this.getCuCsvServiceInstance(logger);
+        BlobInfo blobInfo = null;
 
+        try {
+            blobInfo = getDataFromEvent(context, events);
+        } catch (CanoneUnicoException e) {
+            logger.log(Level.SEVERE, () -> String.format(
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Exception while parsing Event: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+        }
+
+        try {
+            BlobInfo finalBlobInfo = blobInfo;
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
-                            start, blobInfo.getName()));
+                            start, finalBlobInfo.getName()));
 
             // get byte content and convert to String type
             BinaryData content = getContent(context, blobInfo);
             String converted = new String(content.toBytes(), StandardCharsets.UTF_8);
 
             // initialize csvService and info from ecConfig
-            CuCsvService csvService = this.getCuCsvServiceInstance(logger);
             csvService.initEcConfigList();
             DebtPositionValidationCsv csvValidation = validateCsv(blobInfo.getName(), logger, csvService, converted);
 
@@ -77,7 +85,9 @@ public class CuCsvParsing {
             Runtime.getRuntime().gc();
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> String.format(
-                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+            csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + blobInfo.getName(), "Generic Error");
+            csvService.deleteCsv(blobInfo.getContainer(), blobInfo.getDirectory() + '/' + blobInfo.getName());
         }
     }
 
@@ -111,7 +121,7 @@ public class CuCsvParsing {
         }
 
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Blob event subject: %s", context.getInvocationId(), event.getSubject()));
-        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.csv)");
+        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.[Cc][Ss][Vv])");
         Matcher matcher = pattern.matcher(event.getSubject());
 
         // Check if the pattern is found
@@ -158,7 +168,7 @@ public class CuCsvParsing {
 
         // Upload file in error blob storage
         long startTime2 = System.currentTimeMillis();
-        csvService.uploadCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + filename, errorCSV);
+        csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + filename, errorCSV);
         long endTime2 = System.currentTimeMillis();
         logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] uploadCsv executed in [%s] ms", filename, (endTime2 - startTime2)));
 

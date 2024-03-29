@@ -20,13 +20,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import javax.xml.datatype.DatatypeConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -313,7 +311,7 @@ class DebtPositionServiceIntegrationTest {
         List<String> corporateFiles = containerCorporate.listBlobs().stream().map(BlobItem::getName)
                 .collect(Collectors.toList());
 
-        assertTrue(corporateFiles.contains("output/" + csvFileName));
+        assertTrue(corporateFiles.get(0).matches("output/(.*)"));
         assertTrue(!corporateFiles.contains("input/" + csvFileName));
     }
 }
