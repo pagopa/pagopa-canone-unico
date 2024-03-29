@@ -39,7 +39,6 @@ import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.ByteArrayInputStream;
@@ -52,6 +51,7 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -150,7 +150,7 @@ public class CuCsvService {
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
-        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath.replace(".", RandomStringUtils.random(5) + ".")).getBlockBlobClient();
+        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath.replace(".", UUID.randomUUID() + ".")).getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream(content.getBytes());
         blockBlobClient.upload(stream, content.getBytes().length);
     }
