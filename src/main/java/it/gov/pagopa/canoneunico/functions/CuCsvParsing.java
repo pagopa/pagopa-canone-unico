@@ -55,7 +55,7 @@ public class CuCsvParsing {
             blobInfo = getDataFromEvent(context, events);
         } catch (CanoneUnicoException e) {
             logger.log(Level.SEVERE, () -> String.format(
-                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Exception while parsing Event: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Exception while parsing Event: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
         }
 
         try {
@@ -85,7 +85,7 @@ public class CuCsvParsing {
             Runtime.getRuntime().gc();
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> String.format(
-                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
             csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + blobInfo.getName(), "Generic Error");
             csvService.deleteCsv(blobInfo.getContainer(), blobInfo.getDirectory() + '/' + blobInfo.getName());
         }
@@ -121,7 +121,7 @@ public class CuCsvParsing {
         }
 
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Blob event subject: %s", context.getInvocationId(), event.getSubject()));
-        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.csv|[\\w-/]+\\.CSV)");
+        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.[Cc][Ss][Vv])");
         Matcher matcher = pattern.matcher(event.getSubject());
 
         // Check if the pattern is found

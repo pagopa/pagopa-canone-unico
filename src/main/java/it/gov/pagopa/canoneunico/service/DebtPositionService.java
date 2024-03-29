@@ -171,7 +171,7 @@ public class DebtPositionService {
                 new BlobServiceClientBuilder().connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient blobContainerClient =
                 blobServiceClient.getBlobContainerClient(containerName);
-        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_DIRECTORY_NAME + '/' + csvFileName.replace(".", UUID.randomUUID() + "."));
+        BlobClient blobClient = blobContainerClient.getBlobClient(OUTPUT_DIRECTORY_NAME + '/' + csvFileName.replace(".", String.format("%s%s%s", "_", UUID.randomUUID(), ".")));
 
         File csvOutputFile = new File(csvFileName);
 

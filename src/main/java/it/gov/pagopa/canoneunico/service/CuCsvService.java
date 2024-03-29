@@ -150,7 +150,7 @@ public class CuCsvService {
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
-        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath.replace(".", UUID.randomUUID() + ".")).getBlockBlobClient();
+        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath.replace(".", String.format("%s%s%s", "_", UUID.randomUUID(), "."))).getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream(content.getBytes());
         blockBlobClient.upload(stream, content.getBytes().length);
     }
