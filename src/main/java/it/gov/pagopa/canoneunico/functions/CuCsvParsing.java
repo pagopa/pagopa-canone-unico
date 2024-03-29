@@ -48,19 +48,21 @@ public class CuCsvParsing {
         Logger logger = context.getLogger();
         LocalDateTime start = LocalDateTime.now();
 
+        CuCsvService csvService = this.getCuCsvServiceInstance(logger);
+        BlobInfo blobInfo = null;
         try {
-            BlobInfo blobInfo = getDataFromEvent(context, events);
+            blobInfo = getDataFromEvent(context, events);
 
+            BlobInfo finalBlobInfo = blobInfo;
             logger.log(Level.INFO, () ->
                     String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
-                            start, blobInfo.getName()));
+                            start, finalBlobInfo.getName()));
 
             // get byte content and convert to String type
             BinaryData content = getContent(context, blobInfo);
             String converted = new String(content.toBytes(), StandardCharsets.UTF_8);
 
             // initialize csvService and info from ecConfig
-            CuCsvService csvService = this.getCuCsvServiceInstance(logger);
             csvService.initEcConfigList();
             DebtPositionValidationCsv csvValidation = validateCsv(blobInfo.getName(), logger, csvService, converted);
 
@@ -78,6 +80,8 @@ public class CuCsvParsing {
         } catch (Exception e) {
             logger.log(Level.SEVERE, () -> String.format(
                     LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction ERROR] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+            csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + blobInfo.getName(), "Generic Error");
+            csvService.deleteCsv(blobInfo.getContainer(), blobInfo.getDirectory() + '/' + blobInfo.getName());
         }
     }
 
@@ -158,7 +162,7 @@ public class CuCsvParsing {
 
         // Upload file in error blob storage
         long startTime2 = System.currentTimeMillis();
-        csvService.uploadCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + filename, errorCSV);
+        csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + filename, errorCSV);
         long endTime2 = System.currentTimeMillis();
         logger.log(Level.INFO, () -> String.format("[CuCsvParsingFunction] [%s] uploadCsv executed in [%s] ms", filename, (endTime2 - startTime2)));
 

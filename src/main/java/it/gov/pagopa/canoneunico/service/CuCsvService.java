@@ -39,6 +39,7 @@ import it.gov.pagopa.canoneunico.model.error.DebtPositionErrorRow;
 import it.gov.pagopa.canoneunico.util.AzuriteStorageUtil;
 import it.gov.pagopa.canoneunico.util.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.ByteArrayInputStream;
@@ -143,13 +144,13 @@ public class CuCsvService {
                 .build();
     }
 
-    public void uploadCsv(String containerName, String filePath, String content) {
+    public void uploadErrorCsv(String containerName, String filePath, String content) {
         AzuriteStorageUtil azuriteStorageUtil = new AzuriteStorageUtil();
         azuriteStorageUtil.createBlob(containerName);
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .connectionString(this.storageConnectionString).buildClient();
         BlobContainerClient cont = blobServiceClient.getBlobContainerClient(containerName);
-        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath).getBlockBlobClient();
+        BlockBlobClient blockBlobClient = cont.getBlobClient(filePath + RandomStringUtils.random(7)).getBlockBlobClient();
         InputStream stream = new ByteArrayInputStream(content.getBytes());
         blockBlobClient.upload(stream, content.getBytes().length);
     }

@@ -382,7 +382,7 @@ class CuCsvServiceTest {
         if (!container.exists()) {
             blobServiceClient.createBlobContainer(corporateContainer);
         }
-        csvService.uploadCsv(corporateContainer, "fileName.txt", "test content string");
+        csvService.uploadErrorCsv(corporateContainer, "fileName.txt", "test content string");
         // se arrivo a questa chiamata l'upload è andato a buon fine
         assertTrue(true);
         
