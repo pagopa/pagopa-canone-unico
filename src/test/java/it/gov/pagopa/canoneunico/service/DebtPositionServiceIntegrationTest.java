@@ -311,8 +311,6 @@ class DebtPositionServiceIntegrationTest {
         List<String> corporateFiles = containerCorporate.listBlobs().stream().map(BlobItem::getName)
                 .collect(Collectors.toList());
 
-        System.out.println(corporateFiles);
-
         assertTrue(corporateFiles.get(0).matches("output/(.*)"));
         assertTrue(!corporateFiles.contains("input/" + csvFileName));
     }
