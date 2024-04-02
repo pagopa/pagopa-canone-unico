@@ -61,8 +61,8 @@ public class CuCsvParsing {
         try {
             BlobInfo finalBlobInfo = blobInfo;
             logger.log(Level.INFO, () ->
-                    String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s]",
-                            start, finalBlobInfo.getName()));
+                    String.format("[CuCsvParsingFunction START] execution started at [%s] - fileName [%s] - container [%s]",
+                            start, finalBlobInfo.getName(), finalBlobInfo.getContainer()));
 
             // get byte content and convert to String type
             BinaryData content = getContent(context, blobInfo);
@@ -84,8 +84,9 @@ public class CuCsvParsing {
 
             Runtime.getRuntime().gc();
         } catch (Exception e) {
-            logger.log(Level.SEVERE, () -> String.format(
-                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Generic Error: error msg = %s - cause = %s", context.getInvocationId(), e.getMessage(), e.getCause()));
+            logger.log(Level.SEVERE, String.format(
+                    LOG_VALIDATION_PREFIX + "[CuCsvParsingFunction Error] [%s] Generic Error: error msg = %s - cause = %s - fileName [%s] - container [%s]",
+                    context.getInvocationId(), e.getMessage(), e.getCause(), blobInfo.getName(), blobInfo.getContainer()));
             csvService.uploadErrorCsv(blobInfo.getContainer(), ERROR_DIRECTORY_NAME + '/' + blobInfo.getName(), "Generic Error");
             csvService.deleteCsv(blobInfo.getContainer(), blobInfo.getDirectory() + '/' + blobInfo.getName());
         }
