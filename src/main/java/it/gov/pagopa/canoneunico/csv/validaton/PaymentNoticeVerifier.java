@@ -15,7 +15,8 @@ import it.gov.pagopa.canoneunico.entity.EcConfigEntity;
 public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 	private final Set<String> unique = new HashSet<>(); 
 	private List<EcConfigEntity> organizationsList = new ArrayList<>();
-	
+	private static final int DEBTOR_FISCAL_CODE_LENGTH = 11;
+
 	public PaymentNoticeVerifier (List<EcConfigEntity> organizationsList) {
 		this.organizationsList = organizationsList;
 	}
@@ -41,6 +42,11 @@ public class PaymentNoticeVerifier implements BeanVerifier<PaymentNotice>{
 		// check amount value
 		if (bean.getAmount() <= 0) {
 			errors.add("The amount must be greater than zero.");
+		}
+
+		// check debtor fiscal code length
+		if (bean.getDebtorFiscalCode().length() != DEBTOR_FISCAL_CODE_LENGTH) {
+			errors.add(String.format("The debtor fiscal code length must be equal to %s.", DEBTOR_FISCAL_CODE_LENGTH));
 		}
 		
 		// check existence of the organization fiscal code if valued in csv file
