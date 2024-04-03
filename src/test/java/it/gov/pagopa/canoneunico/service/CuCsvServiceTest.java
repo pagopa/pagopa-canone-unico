@@ -163,7 +163,7 @@ class CuCsvServiceTest {
         StringWriter csv = new StringWriter();
         
         String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
-        String row = "1;;C125;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
+        String row = "1;;C125;;;;;;383700;12345678910;Spa;spa@pec.spa.it;;";
         
         csv.append(headers);
         csv.append(System.lineSeparator());
@@ -209,7 +209,7 @@ class CuCsvServiceTest {
         StringWriter csv = new StringWriter();
         
         String headers = "id;pa_id_istat;pa_id_catasto;pa_id_fiscal_code;pa_id_cbill;pa_pec_email;pa_referent_email;pa_referent_name;amount;debtor_id_fiscal_code;debtor_name;debtor_email;payment_notice_number;note";
-        String row = "1;;C125;;;;;;383700;123456;Spa;spa@pec.spa.it;;";
+        String row = "1;;C125;;;;;;383700;12345678910;Spa;spa@pec.spa.it;;";
         
         csv.append(headers);
         csv.append(System.lineSeparator());
