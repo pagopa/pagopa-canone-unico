@@ -122,7 +122,7 @@ public class CuCsvParsing {
         }
 
         logger.log(Level.INFO, () -> String.format("[id=%s][CuCsvParsing] Blob event subject: %s", context.getInvocationId(), event.getSubject()));
-        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w-/]+\\.[Cc][Ss][Vv])");
+        Pattern pattern = Pattern.compile("containers/(\\w+)/blobs/"+INPUT_DIRECTORY_NAME+"/([\\w\\h-]+.[Cc][Ss][Vv])");
         Matcher matcher = pattern.matcher(event.getSubject());
 
         // Check if the pattern is found
